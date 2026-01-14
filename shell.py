@@ -4,7 +4,12 @@ import rhinoscriptsyntax as rs
 import scriptcontext as sc
 import numpy as np 
 import math
+# 以上部分保留
 
 
 
-rs.CurrentLayer("默认值")
+width=800
+stepdepth=250
+stepheight=200
+stepnum=8
+
