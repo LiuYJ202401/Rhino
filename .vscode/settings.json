@@ -1,0 +1,11 @@
+{
+    "python.defaultInterpreterPath": "C:/Users/Liuyouj/.rhinocode/py39-rh8/python.exe",
+    "python.analysis.extraPaths": [
+        "C:/Users/Liuyouj/.rhinocode/py39-rh8/Lib/site-packages",
+        "C:/Users/Liuyouj/.rhinocode/py39-rh8/site-rhinopython",
+        "C:/Users/Liuyouj/.rhinocode/py39-rh8/Lib"
+    ],
+    "python.languageServer": "Pylance",
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay"
+}
