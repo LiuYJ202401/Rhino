@@ -1,0 +1,17 @@
+bin
+obj
+
+.vs
+.vscode
+
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+
+*.dll
+*.exe
+*.pdb
+*.rhp
+*.rhp.config
+*.rhp.addin

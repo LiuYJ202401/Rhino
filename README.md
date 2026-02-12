@@ -12,25 +12,15 @@
 
 新建该模板类型的项目，在**解决方案资源管理器**中右键项目名称，选择**添加->项目引用**，添加`Rhino 8`安装目录**.../Rhino 8/System/**内的文件`RhinoCommon.dll`,`Rhino.YI.dll`,`Eto.dll`。
 
-修改
+修改**./Properties/launchSettings.json**的内容，将"executablePath"的内容修改为自己电脑上`Rhino.exe`的路径。
 
-##### `Rhino8`设置
+运行编译程序，等待`Rhino 8`自动打开载入插件，注意插件的名称不能使用已使用的ID（如"Rhino"等）
 
-在`Rhino8`的命令行中输入`ScriptEditor`，打开`shell.py`文件，在本文件中进行编程，在`Rhino8`环境中运行即可。
+##### `Rhino 8`设置
 
-##### 环境问题
-
-- `.vscode\settings.json`中的路径在本地电脑上不存在？
-
-未初始化，在`Rhino8`的命令行中输入`ScriptEditor`进行初始化。
-
-- `shell.py`文件无法运行？
-
-文件无法直接运行，要在`Rhino8`环境中打开并在`ScriptEditor`中运行。
-
-- `QuicAct`中的函数无法调用？
-
-`Rhino8`使用了临时的虚拟环境，无法依据相对路径调用函数，应该复制粘贴到`shell.py`文件中调用。
+在`Rhino 8`的命令行中输入程序中`EnglishName`对应的字符串，即可调用插件命令。
 
 ### 学习内容
 
+##### 项目结构
+本项目的文件结构可见[文件结构](./Orders.md)
