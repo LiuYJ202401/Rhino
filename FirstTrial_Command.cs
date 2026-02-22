@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using PublicContent;
 using Rhino;
 using Rhino.Commands;
+using Rhino.DocObjects;
 using Rhino.Geometry;
 using Rhino.Input;
 using Rhino.Input.Custom;
+using System;
+using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
+using System.Security.Cryptography;
 
-namespace Rhino
+namespace RhinoTrial
 {
     public class FirstTrial_Command : Command
     {
         public FirstTrial_Command()
         {
-            // Rhino only creates one instance of each command class defined in a
-            // plug-in, so it is safe to store a refence in a static property.
             Instance = this;
         }
 
@@ -27,8 +29,26 @@ namespace Rhino
         {
             // TODO: start here modifying the behaviour of your command.
             // 开始！
+            Curve A = Rs.GetACurve();
+            int PostNum = 5;
+            double Height = 1000;
+            double Width = 500;
+            double Length = 200;
+            Box b = new Box(Plane.WorldXY,
+                new Interval(-Length / 2, Length / 2),
+                new Interval(-Width / 2, Width / 2),
+                new Interval(0,Height)
+                );
+            Brep B = b.ToBrep();
+            Point3d pt=new Point3d(Length/2,0,0);
+            Vector3d vec = new Vector3d(0,1,0);
 
-            RhinoApp.WriteLine("Hello from MyRail command!");
+            List<Brep> bl = Rs.BrepsAlongCurve(A, B, PostNum, vec, pt,delta:100,reverse:true,headmove:500);
+            for (int i = 0; i < bl.Count; i++) { doc.Objects.AddBrep(bl[i]); }
+            
+
+
+
             return Result.Success;
 
             //RhinoApp.WriteLine("The {0} command will add a line right now.", EnglishName);
