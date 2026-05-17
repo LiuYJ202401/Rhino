@@ -7,6 +7,8 @@ using Rhino.Input;
 using Rhino.Input.Custom;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Cryptography;
 
@@ -29,7 +31,9 @@ namespace RhinoTrial
         {
             // TODO: start here modifying the behaviour of your command.
             // 开始！
-            Curve A = Rs.GetACurve();
+
+            /*
+            Curve A = Rs.GetACurve();//生成栏杆的尝试
             int PostNum = 5;
             double Height = 1000;
             double Width = 500;
@@ -42,12 +46,14 @@ namespace RhinoTrial
             Brep B = b.ToBrep();
             Point3d pt=new Point3d(Length/2,0,0);
             Vector3d vec = new Vector3d(0,1,0);
-
             List<Brep> bl = Rs.BrepsAlongCurve(A, B, PostNum, vec, pt,delta:100,reverse:true,headmove:500);
             for (int i = 0; i < bl.Count; i++) { doc.Objects.AddBrep(bl[i]); }
-            
+            */
 
-
+            Curve A = Rs.GetACurve();
+            Curve a111 = Rs.MakeACapsule(doc.ModelAbsoluteTolerance, 1000, 500);
+            Brep bbb = Rs.BrepsSweepFromACurve(doc.ModelAbsoluteTolerance, A, a111);
+            doc.Objects.AddBrep(bbb);
 
             return Result.Success;
 

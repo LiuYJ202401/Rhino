@@ -10,7 +10,7 @@
 
 本项目基于`Visual Studio Community 2022`进行开发，通过[github的链接](https://github.com/mcneel/RhinoVisualStudioExtensions/releases)或根目录里的`.vsix`文件运行对`VS 2022`的修改，增加`Rhino 8 Plug-In(C#)`文件的模板。
 
-新建该模板类型的项目，在**解决方案资源管理器**中右键项目名称，选择**添加->项目引用**，添加`Rhino 8`安装目录**.../Rhino 8/System/**内的文件`RhinoCommon.dll`,`Rhino.YI.dll`,`Eto.dll`。
+新建该模板类型的项目，在**解决方案资源管理器**中右键项目名称，选择**添加->项目引用**，添加`Rhino 8`安装目录**.../Rhino 8/System/**内的文件`RhinoCommon.dll`,`Rhino.UI.dll`,`Eto.dll`。
 
 修改**./Properties/launchSettings.json**的内容，将"executablePath"的内容修改为自己电脑上`Rhino.exe`的路径。
 
