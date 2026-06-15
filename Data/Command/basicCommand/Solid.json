@@ -1,0 +1,60 @@
+{
+  "capEnds": true,
+  "pipeCapMode": 1,
+  "CreateSphere": {
+    "radius": 1.0
+  },
+  "CreateEllipsoid": {
+    "radiiX": 1.0,
+    "radiiY": 0.8,
+    "radiiZ": 1.2
+  },
+  "CreateTorus": {
+    "majorRadius": 2.0,
+    "minorRadius": 0.5
+  },
+  "CreateCylinder": {
+    "radius": 1.0,
+    "height": 2.0
+  },
+  "CreateCone": {
+    "bottomRadius": 1.0,
+    "height": 2.0
+  },
+  "CreateTruncatedCone": {
+    "bottomRadius": 1.0,
+    "topRadius": 0.5,
+    "height": 2.0
+  },
+  "CreateTube": {
+    "innerRadius": 0.5,
+    "outerRadius": 1.0,
+    "height": 2.0
+  },
+  "CreatePyramid": {
+    "sides": 4,
+    "radius": 1.0,
+    "height": 2.0
+  },
+  "CreateTruncatedPyramid": {
+    "sides": 4,
+    "bottomRadius": 1.0,
+    "topRadius": 0.5,
+    "height": 2.0
+  },
+  "CreateLoftSolid": {
+    "loftType": 0
+  },
+  "CreatePipe": {
+    "radius": 0.5,
+    "innerRadius": 0.3,
+    "outerRadius": 0.5
+  },
+  "CreateSlab": {
+    "offsetDistance": 0.5
+  },
+  "CreateThicken": {
+    "distance": 1.0,
+    "bothSides": false
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "common": {
+    "tolerance": { "dynamic": true, "source": "ModelAbsoluteTolerance" },
+    "angleTolerance": { "dynamic": true, "source": "ModelAngleToleranceRadians" }
+  },
+  "CreatePlane": {
+    "verticalHeight": 1.0
+  },
+  "CreateSrf": {
+    "degree": 3
+  },
+  "CreateSrfThroughPts": {
+    "uDegree": 3,
+    "vDegree": 3
+  },
+  "CreateSrfControlPts": {
+    "uDegree": 3,
+    "vDegree": 3
+  },
+  "CreateLoft": {
+    "loftType": 0,
+    "closed": false
+  },
+  "CreateRevolve": {
+    "startAngle": 0.0,
+    "endAngle": 6.283185307179586
+  },
+  "CreateExtrudeTapered": {
+    "draftAngle": 0.0873
+  },
+  "CreatePatch": {
+    "uSpans": 10,
+    "vSpans": 10
+  },
+  "CreateDrape": {
+    "spacing": 10
+  },
+  "CreateHeightfield": {
+    "samples": 50
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "common": {
+    "tolerance": { "dynamic": true, "source": "ModelAbsoluteTolerance" },
+    "angleTolerance": { "dynamic": true, "source": "ModelAngleToleranceRadians" }
+  }
+}

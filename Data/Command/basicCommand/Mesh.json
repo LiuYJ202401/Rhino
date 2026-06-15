@@ -1,0 +1,42 @@
+{
+  "segments": 16,
+  "rings": 10,
+  "vertical": 1,
+  "around": 16,
+  "majorSegments": 24,
+  "minorSegments": 12,
+  "subdivisions": 3,
+  "boxCount": {
+    "x": 1,
+    "y": 1,
+    "z": 1
+  },
+  "planeCount": {
+    "x": 1,
+    "y": 1
+  },
+  "CreateMeshSphere": {
+    "radius": 1.0
+  },
+  "CreateMeshCylinder": {
+    "radius": 1.0,
+    "height": 2.0
+  },
+  "CreateMeshCone": {
+    "bottomRadius": 1.0,
+    "height": 2.0
+  },
+  "CreateMeshTorus": {
+    "majorRadius": 2.0,
+    "minorRadius": 0.5
+  },
+  "CreateMeshEllipsoid": {
+    "radiiX": 1.0,
+    "radiiY": 0.8,
+    "radiiZ": 1.2
+  },
+  "quadRemesh": {
+    "targetQuadCount": 4000,
+    "adaptSize": 0.0
+  }
+}

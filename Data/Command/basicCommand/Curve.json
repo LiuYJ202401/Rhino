@@ -1,0 +1,51 @@
+{
+  "common": {
+    "tolerance": { "dynamic": true, "source": "ModelAbsoluteTolerance" },
+    "angleTolerance": { "dynamic": true, "source": "ModelAngleToleranceRadians" }
+  },
+  "CreateCircle": {
+    "radius": 1.0
+  },
+  "CreatePolyline": {
+    "closed": false
+  },
+  "CreateArc": {
+    "startAngle": 0.0,
+    "endAngle": 1.5707963267948966
+  },
+  "CreateConic": {
+    "rho": 0.5
+  },
+  "CreateNurbsCurve": {
+    "degree": 3,
+    "periodic": false
+  },
+  "CreateInterpCrv": {
+    "degree": 3,
+    "knots": "Uniform",
+    "startTangent": "Unset",
+    "endTangent": "Unset"
+  },
+  "CreateHandleCurve": {
+    "closed": false
+  },
+  "CreateCurveThroughPt": {
+    "degree": 3,
+    "periodic": false,
+    "tolerance": { "dynamic": true, "source": "ModelAbsoluteTolerance" },
+    "startTangent": "Unset",
+    "endTangent": "Unset"
+  },
+  "CreateHelix": {
+    "startRadius": 1.0,
+    "endRadius": 1.0,
+    "pitch": 1.0
+  },
+  "CreateSpiral": {
+    "startRadius": 1.0,
+    "endRadius": 5.0
+  },
+  "CreateDividePoints": {
+    "segmentCount": 2
+  }
+}
