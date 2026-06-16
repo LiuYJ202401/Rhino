@@ -558,13 +558,15 @@ RhinoCommon 提供 `Rhino.Geometry.Circle` 结构体的 7 种构造函数，本�
 
 ### CreateProjectCrv
 
-| 项目 | 内容 |
+对应 Rhino 命令：`Project`
+
+| 项目 | 说明 |
 |------|------|
-| 功能 | 将曲线沿工作平面法线投影到曲面/多重曲面 |
-| 对应命令 | Project |
-| 输入 | `IEnumerable<Curve> curves` — 要投影的曲线，`IEnumerable<GeometryBase> targets` — 投影目标曲面，`Vector3d direction` — 投影方向 [可选，默认工作平面法线] |
+| 功能 | 将曲线沿指定方向投影到 Brep 上 |
+| 输入 | `IEnumerable<Curve> curves` — 要投影的曲线，`Brep target` — 投影目标曲面，`Vector3d direction` — 投影方向，`bool isPreview = false` |
 | 输出 | `Curve[]` — 投影后的曲线数组 |
-| 报错 | CurvesEmptyException — 曲线为空；NoTargetException — 无目标曲面 |
+| 报错 | curves 或 target 为 null 时返回空数组 |
+| RhinoCommon | `Curve.ProjectToBrep(curve, brep, direction, tolerance)` |
 
 ### CreatePullCrv
 
@@ -590,13 +592,15 @@ RhinoCommon 提供 `Rhino.Geometry.Circle` 结构体的 7 种构造函数，本�
 
 ### CreateDupEdge
 
-| 项目 | 内容 |
+对应 Rhino 命令：`DupEdge`
+
+| 项目 | 说明 |
 |------|------|
 | 功能 | 复制曲面/多重曲面的边缘为独立曲线 |
-| 对应命令 | DupEdge |
-| 输入 | `Brep brep` — 源曲面，`IEnumerable<BrepEdge> edges` — 指定边缘 [可选，不传则复制全部裸露边缘] |
+| 输入 | `Brep brep` — 源曲面，`IEnumerable<BrepEdge> edges` — 指定边缘 [可选，不传则复制全部裸露边缘]，`bool isPreview = false` |
 | 输出 | `Curve[]` — 边缘曲线数组 |
-| 报错 | BrepInvalidException — 曲面无效 |
+| 报错 | brep 为 null 时返回空数组 |
+| RhinoCommon | `BrepEdge.DuplicateCurve()` |
 
 ### CreateExtractIsocurve
 
@@ -610,13 +614,15 @@ RhinoCommon 提供 `Rhino.Geometry.Circle` 结构体的 7 种构造函数，本�
 
 ### CreateContour
 
-| 项目 | 内容 |
+对应 Rhino 命令：`Contour`
+
+| 项目 | 说明 |
 |------|------|
-| 功能 | 在曲面/多重曲面上生成等高线 |
-| 对应命令 | Contour |
-| 输入 | `GeometryBase geometry` — 目标对象，`Plane startPlane` — 起始等高平面，`Vector3d direction` — 等高方向，`double interval` — 间距 |
+| 功能 | 在 Brep 或 Mesh 上按起始点和方向生成等高线 |
+| 输入 | `GeometryBase geometry` — 目标对象（Brep 或 Mesh），`Point3d startPt` — 等高线起始点，`Point3d endPt` — 方向终点（endPt - startPt 定义等高方向），`double interval` — 间距，`bool isPreview = false` |
 | 输出 | `Curve[]` — 等高线数组 |
-| 报错 | GeometryInvalidException — 对象无效；IntervalZeroException — 间距为 0 |
+| 报错 | geometry 为 null 或 interval ≤ 0 时返回空数组 |
+| RhinoCommon | `Brep.CreateContourCurves(brep, startPt, endPt, interval)` / `Mesh.CreateContourCurves(mesh, startPt, endPt, interval)` |
 
 ### CreateSection
 

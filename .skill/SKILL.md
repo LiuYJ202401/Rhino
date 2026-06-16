@@ -57,6 +57,8 @@ Data (Rh.Data)            默认值存储，JSON 文件 + DataReader 缓存
 | Surface | `Rh.Geo.Srf` | 避免与 `Rhino.Geometry.Surface` 冲突 |
 | Solid | `Rh.Geo.Sld` | 避免与 `Rhino.Geometry.Brep` 冲突（预留） |
 | Mesh | `Rh.Geo.Msh` | 避免与 `Rhino.Geometry.Mesh` 冲突 |
+| Transform | `Rh.Geo.Trs` | 避免与 `Rhino.Geometry.Transform` 冲突 |
+| Morph | `Rh.Geo.Mrf` | 避免与 `Rhino.Geometry.Morphs` 冲突 |
 
 ---
 
@@ -104,6 +106,16 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 - 步骤的三个函数用命名方法实现，不用 lambda
 - 模板内部交互循环等杂活用私有方法封装
 - 公差等参数从 Data 层传入，不直接访问 `ActiveDoc`
+
+### 2.6 文档优先原则
+
+- **查阅信息时优先从文档读取**，而非直接扫描代码
+  - 查方法签名 → 读 `Command/basicCommand/{功能区}.md`
+  - 查几何 API → 读 `Geometry/{类型}/README.md`
+  - 查默认值 → 读 `Data/Command/.../{功能区}.json`
+- **文档是即时更新的**：每次修改代码后，同步更新对应文档
+- **代码与文档必须契合**：文档中的方法签名、重载数量、参数类型必须与实际代码一致
+- **开发流程中文档先行**：创建新功能时先写文档再写代码；修改接口时先改文档再改代码
 
 ---
 
@@ -440,11 +452,15 @@ Preview() 返回的几何对象通过 DrawGeometry 统一绘制，支持以下�
 | Geometry/Surface | `Geometry/Surface/README.md` | 曲面几何详细方法表 |
 | Geometry/Solid | `Geometry/Solid/README.md` | 实体几何详细方法表 |
 | Geometry/Mesh | `Geometry/Mesh/README.md` | 网格几何详细方法表 |
+| Geometry/Transform | `Geometry/Transform/README.md` | 变换几何详细方法表 |
+| Geometry/Morph | `Geometry/Morph/README.md` | 空间变形几何详细方法表（待创建） |
 | Command/Point | `Command/basicCommand/Point.md` | 点命令全部方法 |
 | Command/Curve | `Command/basicCommand/Curve.md` | 曲线命令全部重载 |
 | Command/Surface | `Command/basicCommand/Surface.md` | 曲面命令全部重载 |
 | Command/Solid | `Command/basicCommand/Solid.md` | 实体命令全部重载 |
 | Command/Mesh | `Command/basicCommand/Mesh.md` | 网格命令全部重载 |
+| Command/Transform | `Command/basicCommand/Transform.md` | 变换命令全部重载 |
+| Command/Morph | `Command/basicCommand/Morph.md` | 空间变形命令全部重载（待创建） |
 | Data | `Data/DataReader.md` | DataReader API 说明 |
 
 ### 编译命令

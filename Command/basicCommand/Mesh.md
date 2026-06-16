@@ -224,13 +224,25 @@
 
 对应 Rhino 命令：`MeshPatch`
 
+**重载 1：完整版（点集 + 曲线 + 参数）**
+
 | 项目 | 说明 |
 |------|------|
-| 功能 | 从点集和曲线创建网格曲面（补面） |
-| 输入 | `IEnumerable<Point3d> points` — 点集，`IEnumerable<Curve> curves` — 边界曲线 [可选]，`int uSpacing` — U 方向间距 [可选]，`int vSpacing` — V 方向间距 [可选]，`bool isPreview = false` |
+| 功能 | 从点集和约束曲线创建网格补面 |
+| 输入 | `IEnumerable<Point3d> points` — 点集，`IEnumerable<Curve> curves` — 约束曲线 [可选 null]，`double angleToleranceRadians` — 曲线转多段线的角度公差，`int divisions` — 边界分割数，`bool trimback` — 是否裁剪外围，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格曲面 |
-| 报错 | 点数不足时返回 null |
-| RhinoCommon | 无直接 API，Geometry 层用 Delaunay 三角化近似 |
+| 报错 | 点数不足且无曲线时返回 null |
+| RhinoCommon | `Mesh.CreatePatch(null, angleTol, null, null, curves, points, trimback, divisions)` |
+
+**重载 2：简化版（仅点集）**
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | 从点集创建平面网格补面 |
+| 输入 | `IEnumerable<Point3d> points` — 点集，`double tolerance` — 公差，`bool isPreview = false` |
+| 输出 | `Mesh` — 网格曲面 |
+| 报错 | 点数 < 3 时返回 null |
+| RhinoCommon | Geometry 层用 `Plane.FitPlaneToPoints` + `Mesh.CreateFromTessellation` |
 
 ---
 

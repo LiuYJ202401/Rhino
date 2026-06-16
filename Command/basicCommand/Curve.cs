@@ -996,9 +996,26 @@ namespace Rh.Cmd
         }
 
         /// <summary>
-        /// 复制曲面裸露边缘为独立曲线。
-        /// RhinoCommon：brep.Edges → edge.DuplicateCurve()
+        /// 复制曲面/多重曲面的边缘为独立曲线。
+        /// 重载 1：指定边缘 — 复制指定的边（不限于裸露边）。
+        /// 重载 2：全部裸露边 — 自动提取所有裸露边缘。
         /// </summary>
+        public static Curve[] CreateDupEdge(Brep brep, IEnumerable<BrepEdge> edges, bool isPreview = false)
+        {
+            if (brep == null || edges == null)
+                return new Curve[0];
+
+            var result = new List<Curve>();
+            foreach (BrepEdge edge in edges)
+            {
+                Curve dup = edge.DuplicateCurve();
+                if (dup != null)
+                    result.Add(dup);
+            }
+
+            return result.ToArray();
+        }
+
         public static Curve[] CreateDupEdge(Brep brep, bool isPreview = false)
         {
             if (brep == null)

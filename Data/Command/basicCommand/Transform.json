@@ -1,0 +1,37 @@
+{
+  "Array": {
+    "count": 3,
+    "spacing": 1.0
+  },
+  "ArrayRectangular": {
+    "xCount": 2,
+    "yCount": 2,
+    "zCount": 1,
+    "xSpacing": 1.0,
+    "ySpacing": 1.0,
+    "zSpacing": 1.0
+  },
+  "ArrayPolar": {
+    "count": 6,
+    "totalAngle": 6.283185307179586,
+    "rotate": true
+  },
+  "ArrayAlongCrv": {
+    "count": 3,
+    "spacing": 1.0,
+    "orient": false
+  },
+  "ArrayOnSrf": {
+    "uCount": 2,
+    "vCount": 2
+  },
+  "Rotate": {
+    "angle": 0.0
+  },
+  "Scale": {
+    "factor": 2.0,
+    "xFactor": 1.0,
+    "yFactor": 1.0,
+    "zFactor": 1.0
+  }
+}

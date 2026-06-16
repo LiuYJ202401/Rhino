@@ -75,10 +75,10 @@
 | 项目 | 说明 |
 |------|------|
 | 功能 | 创建穿过一组对象的切割平面 |
-| 输入 | `IEnumerable<GeometryBase> objects` — 被切割的对象，`Point3d firstPoint` — 第一切割点，`Point3d secondPoint` — 第二切割点（`Point3d.Unset` 表示自动），`bool isPreview = false` |
+| 输入 | `Plane plane` — 切割平面的方向和位置，`IEnumerable<GeometryBase> objects` — 被切割的对象，`bool isPreview = false` |
 | 输出 | `Brep` — 切割平面 |
 | 报错 | 对象列表为空时返回 null |
-| RhinoCommon | 无直接构造，Geometry 层计算包围盒后构造平面 |
+| RhinoCommon | `Brep.CreateCutPlane(Plane, IEnumerable<GeometryBase>)` |
 
 ---
 
@@ -349,10 +349,10 @@
 | 项目 | 说明 |
 |------|------|
 | 功能 | 偏移曲线并在原曲线和偏移曲线间创建直纹曲面 |
-| 输入 | `Curve curve` — 输入曲线，`double distance` — 偏移距离，`bool isPreview = false` |
+| 输入 | `Curve curve` — 输入曲线，`double distance` — 偏移距离，`Plane plane` — 偏移参考平面，`bool isPreview = false` |
 | 输出 | `Brep` — 彩带曲面 |
 | 报错 | 曲线无效或距离为 0 时返回 null |
-| RhinoCommon | 无直接构造，Geometry 层用 `Curve.CreateOffset` + `NurbsSurface.CreateRuledSurface` 实现 |
+| RhinoCommon | Geometry 层用 `Curve.Offset` + `NurbsSurface.CreateRuledSurface` 实现 |
 
 ### CreateFin
 
@@ -361,10 +361,10 @@
 | 项目 | 说明 |
 |------|------|
 | 功能 | 沿曲面法线方向挤出曲面上的曲线 |
-| 输入 | `Curve curve` — 曲面上的曲线，`Brep surface` — 所在曲面，`double height` — 挤出高度，`bool isPreview = false` |
+| 输入 | `Curve curve` — 曲面上的曲线，`BrepFace face` — 所在曲面（单个面），`double height` — 挤出高度，`bool isPreview = false` |
 | 输出 | `Brep` — 翼面曲面 |
 | 报错 | 曲线不在曲面上或高度为 0 时返回 null |
-| RhinoCommon | 无直接构造，Geometry 层手动计算法线方向挤出 |
+| RhinoCommon | Geometry 层从 BrepFace 获取法线方向后挤出 |
 
 ### CreateDrape
 

@@ -41,7 +41,8 @@
 |------|------|------|-------------|
 | `CreateConvexHull` | IEnumerable\<Point3d\>, double×2 | Mesh | `Mesh.CreateConvexHull3D` |
 | `CreateFromTessellation` | IEnumerable\<Point3d\>, edges, Plane, bool | Mesh | `Mesh.CreateFromTessellation` |
-| `CreatePatch` | IEnumerable\<Point3d\>, double | Mesh | 凸包近似 + 平面三角化退化 |
+| `CreatePatch` | IEnumerable\<Point3d\>, IEnumerable\<Curve\>, double, int, bool | Mesh | `Mesh.CreatePatch` |
+| `CreatePatch` (简化) | IEnumerable\<Point3d\>, double | Mesh | 平面拟合 + 三角化 |
 
 ### 重网格化
 

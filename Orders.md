@@ -35,10 +35,9 @@ Data (Rh.Data)            默认值存储，JSON 文件 + DataReader 缓存
 4. **Project 层是唯一写入文档的层**
 5. **isPreview 模式**：预览时不更新 Data，避免拖动时频繁写文件
 6. **同层允许依赖**：如 Geometry/Solid 调用 Geometry/Curve 的方法
-7. **Geometry 子命名空间使用缩写**（Crv/Srf/Sld/Msh），避免与 RhinoCommon 类型名冲突
+7. **Geometry 子命名空间使用缩写**（Crv/Srf/Sld/Msh/Trs/Mrf），避免与 RhinoCommon 类型名冲突
 
 ## 详细文档
 
 - 框架使用方式：见 `README.md`
 - AI 开发指南：见 `.skill/SKILL.md`
-- 开发计划与进度：见 `.trae/documents/rhino-csharp-plugin-framework-development-plan.md`

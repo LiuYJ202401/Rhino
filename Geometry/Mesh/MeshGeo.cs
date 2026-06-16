@@ -213,6 +213,40 @@ namespace Rh.Geo.Msh
         /// 从点集创建网格曲面（补面）。
         /// 无直接 API，用点集直接构造网格近似。
         /// </summary>
+        /// <summary>
+        /// 从点集和曲线创建网格补面（完整版）。
+        /// RhinoCommon：Mesh.CreatePatch(Polyline, double, Surface, IEnumerable<Curve>, IEnumerable<Curve>, IEnumerable<Point3d>, bool, int)
+        /// </summary>
+        public static Mesh CreatePatch(
+            IEnumerable<Point3d> points,
+            IEnumerable<Curve> curves,
+            double angleToleranceRadians,
+            int divisions,
+            bool trimback)
+        {
+            if (points == null)
+                return null;
+
+            var pointList = new List<Point3d>(points);
+            if (pointList.Count < 3 && (curves == null))
+                return null;
+
+            // 使用 RhinoCommon CreatePatch，无外边界、无参考曲面
+            return Mesh.CreatePatch(
+                null,                       // outerBoundary
+                angleToleranceRadians,      // angleToleranceRadians
+                null,                       // pullbackSurface
+                null,                       // innerBoundaryCurves（孔洞）
+                curves,                     // innerBothSideCurves（约束曲线）
+                pointList,                  // innerPoints
+                trimback,                   // trimback
+                divisions                   // divisions
+            );
+        }
+
+        /// <summary>
+        /// 从点集创建网格补面（简化版，仅点集）。
+        /// </summary>
         public static Mesh CreatePatch(IEnumerable<Point3d> points, double tolerance)
         {
             if (points == null)

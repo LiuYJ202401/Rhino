@@ -307,7 +307,32 @@ namespace Rh.Cmd
             return MeshGeo.CreateFromTessellation(points, edges, plane, allowNewVertices);
         }
 
-        /// <summary>从点集创建网格曲面（补面）</summary>
+        /// <summary>
+        /// 从点集和曲线创建网格补面（完整版）。
+        /// 重载 1：支持点集 + 约束曲线 + 角度公差 + 分割数 + 裁剪。
+        /// </summary>
+        public static Mesh CreateMeshPatch(
+            IEnumerable<Point3d> points,
+            IEnumerable<Curve> curves,
+            double angleToleranceRadians,
+            int divisions,
+            bool trimback,
+            bool isPreview = false)
+        {
+            if (!isPreview)
+            {
+                UpdateDefault("CreateMeshPatch.angleTolerance", angleToleranceRadians);
+                UpdateDefault("CreateMeshPatch.divisions", divisions);
+                UpdateDefault("CreateMeshPatch.trimback", trimback);
+            }
+
+            return MeshGeo.CreatePatch(points, curves, angleToleranceRadians, divisions, trimback);
+        }
+
+        /// <summary>
+        /// 从点集创建网格补面（简化版，仅点集）。
+        /// 重载 2：仅点集 + 公差。
+        /// </summary>
         public static Mesh CreateMeshPatch(IEnumerable<Point3d> points, double tolerance, bool isPreview = false)
         {
             return MeshGeo.CreatePatch(points, tolerance);
