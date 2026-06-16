@@ -81,10 +81,52 @@ Data (Rh.Data)            默认值存储，JSON 文件 + DataReader 缓存
 ### 2.3 层级职责
 
 - **Geometry 层负责几何计算**：直径→中心/半径、边长→中心/角度、UV 投影、牛顿迭代等
-- **Command 层负责**：参数校验、默认值管理（读写 Data）、调用 Geometry、isPreview 控制
+- **Command 层负责**：参数校验、错误输出、默认值管理（读写 Data）、调用 Geometry、isPreview 控制
 - **Project 层负责**：用户交互（UI 模板）、调用 Command、写入文档
 
-### 2.4 isPreview 模式
+### 2.4 Command 层错误输出规范
+
+**原则**：Command 层是用户与 Geometry 层之间的桥梁。所有错误必须在 Rhino 命令行中报告，**不能静默返回 null**。
+
+**实现方式**：
+
+```csharp
+public static Polyline CreateRectangle(Plane plane, Point3d corner1, Point3d corner2, bool isPreview = false)
+{
+    // 1. 参数校验（在调用 Geometry 之前）
+    if (corner1.DistanceTo(corner2) < 1e-12)
+    {
+        RhinoApp.WriteLine("[CreateRectangle] 错误：两点重合");
+        return null;
+    }
+
+    // 2. 调用 Geometry
+    var result = RectangleGeo.CreateFromCorners(plane, corner1, corner2);
+
+    // 3. 结果检查（Geometry 返回 null 时报告）
+    if (result == null)
+    {
+        RhinoApp.WriteLine("[CreateRectangle] 错误：两点在平面 UV 方向上投影重合，无法创建矩形");
+        return null;
+    }
+
+    // 4. 默认值管理
+    if (!isPreview)
+        UpdateDefault("CreateRectangle", result);
+
+    return result;
+}
+```
+
+**错误消息格式**：`[方法名] 错误：具体原因`
+
+**规则**：
+- 参数校验失败 → 输出错误消息 + return null
+- Geometry 返回 null/Unset/空数组 → 输出错误消息 + return null/Unset/空数组
+- **Geometry 层保持静默**（只返回结果，不输出消息），由 Command 层统一报告
+- 错误消息用中文，简洁明了，指出哪个参数/条件导致失败
+
+### 2.5 isPreview 模式
 
 ```csharp
 // Command 层方法签名
@@ -101,13 +143,13 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 - `isPreview: true`：读 Data 默认值 + Geometry 创建 + **不更新** Data
 - `isPreview: false`：读 Data + Geometry 创建 + **更新** Data
 
-### 2.5 代码风格
+### 2.6 代码风格
 
 - 步骤的三个函数用命名方法实现，不用 lambda
 - 模板内部交互循环等杂活用私有方法封装
 - 公差等参数从 Data 层传入，不直接访问 `ActiveDoc`
 
-### 2.6 文档优先原则
+### 2.7 文档优先原则
 
 - **查阅信息时优先从文档读取**，而非直接扫描代码
   - 查方法签名 → 读 `Command/basicCommand/{功能区}.md`
@@ -116,6 +158,61 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 - **文档是即时更新的**：每次修改代码后，同步更新对应文档
 - **代码与文档必须契合**：文档中的方法签名、重载数量、参数类型必须与实际代码一致
 - **开发流程中文档先行**：创建新功能时先写文档再写代码；修改接口时先改文档再改代码
+
+### 2.8 测试编写规则
+
+- **值类型断言用 `NotNull`**：`Circle`/`Arc`/`Line`/`Polyline`/`Ellipse` 等是值类型，不继承 `GeometryBase`，用 `Assert.NotNull`
+- **引用类型断言用 `IsValid`**：`Curve`/`Brep`/`Mesh`/`Surface` 等继承 `GeometryBase`，用 `Assert.IsValid`（同时检查 null 和有效性）
+
+### 2.9 类型创建规则
+
+- **优先通过 Command/Geometry 层方法创建几何**，不要直接 `new Circle(...)` / `new Arc(...)` / `new Brep(...)`
+- **原因**：RhinoCommon 的值类型构造函数签名复杂且版本差异大（如 `Arc` 有 6 种构造函数），凭记忆容易出错
+- **正确做法**：`CurveCmd.CreateCircle(...)` / `SolidCmd.CreateBox(...)` / `SurfaceCmd.CreatePlane(...)`
+- **例外**：Geometry 层内部实现可以直接使用 RhinoCommon 构造函数（因为它是封装的最后一层）
+
+### 2.10 Rhino 插件命令发现机制
+
+**问题现象**：新增的命令在 Rhino 命令行中无法找到（输入后提示"Unknown command"），但代码编译无误、类继承正确。
+
+**根因**：Rhino 插件默认 `LoadMode = WhenNeeded`（按需加载）。Rhino 在注册表 `HKCU\Software\McNeel\Rhinoceros\<版本>\Plug-ins\<GUID>\CommandList` 中缓存已知命令名。只有当用户运行一个**已知命令**时，Rhino 才会加载插件程序集并扫描新命令。添加新命令后，如果不触发插件加载，Rhino 永远不会发现它们。
+
+**解决方案**（按推荐度排序）：
+
+| 方案 | 操作 | 适用场景 |
+|------|------|---------|
+| **A. 触发加载** | 在 Rhino 中运行任意一个已知命令（如 `RhCreateCircle`），插件加载后自动扫描全部命令 | 最快，无需改代码 |
+| **B. 启动时加载** | 在 `Plugin.cs` 中重写 `LoadTime => PlugInLoadTime.AtStartup`，重启 Rhino | 开发期间频繁新增命令时 |
+| **C. 重新注册插件** | 在 Rhino 中用 `_PluginManager` 卸载后重新加载插件 | 需要清除注册表缓存时 |
+
+**方案 B 的代码**（开发期间临时使用）：
+
+```csharp
+public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
+```
+
+> **注意**：发布时必须移除此重写或改回 `WhenNeeded`，否则会拖慢 Rhino 启动速度。
+
+### 2.11 Geometry 层实现规范
+
+以下规则源于测试链 1 的实战教训，记录在 `Project/Test/Overview.md` 第 15 节。
+
+| 编号 | 规则 | 错误示例 | 正确做法 |
+|------|------|---------|---------|
+| G1 | **优先使用 RhinoCommon 原生构造体**，不手动拼接面 | `CreateTruncatedCone` 用 Loft 放样 → 接缝不对齐 → 封盖失败 | 用 `RevSurface.Create` + `Brep.CreateFromRevSurface` |
+| G2 | **封盖统一用 `CapPlanarHoles`**，不手动创建底盖曲线 | `CreatePyramid` 用 `CreateControlPointCurve` + `CreatePlanarBreps` → 底盖失败 | 拼侧面 → `JoinBreps` → `CapPlanarHoles` |
+| G3 | **多面体合并用 `Brep.JoinBreps`**，不用 `Append` | `Append + JoinNakedEdges` → `IsSolid == false` | `Brep.JoinBreps(faceList, tolerance)[0]` |
+| G4 | **创建实体后必须验证 `IsSolid`** | 直接返回 JoinBreps 结果，不检查 | `if (!result.IsSolid) return null;` |
+| G5 | **`Vector3d` 作为方向+距离时禁止 `Unitize`** | `normal.Unitize()` 丢失高度信息 | 先取 `normal.Length`，再 `Unitize` 构造平面 |
+| G6 | **`Box`/`Interval` 在 Plane 上下文中是局部坐标** | 世界坐标直接传入 `new Box(plane, worldInterval)` | 用 `plane.RemapToPlaneSpace()` 转换 |
+
+**实体创建的统一模式**：
+
+```
+拼侧面（开放曲面） → JoinBreps 合并为开放壳 → CapPlanarHoles 封盖 → 验证 IsSolid
+```
+
+适用于：ExtrudeSolid、RevolveSolid、SweepSolid、LoftSolid、Pyramid、TruncatedPyramid、Pipe、Slab、Thicken。
 
 ---
 

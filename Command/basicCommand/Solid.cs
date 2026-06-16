@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Rhino;
 using Rhino.Geometry;
 using Rh.Data;
 using Rh.Geo.Sld;
@@ -66,7 +67,13 @@ namespace Rh.Cmd
         {
             if (!isPreview)
                 UpdateDefault("CreateSphere.radius", radius);
-            return SolidGeo.CreateSphere(center, normal, radius);
+            var brep = SolidGeo.CreateSphere(center, normal, radius);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateSphere] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateEllipsoid(Point3d center, Vector3d normal, Vector3d radii, bool isPreview = false)
@@ -77,7 +84,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateEllipsoid.radiiY", radii.Y);
                 UpdateDefault("CreateEllipsoid.radiiZ", radii.Z);
             }
-            return SolidGeo.CreateEllipsoid(center, normal, radii);
+            var brep = SolidGeo.CreateEllipsoid(center, normal, radii);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateEllipsoid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateTorus(Point3d center, Vector3d normal, double majorRadius, double minorRadius,
@@ -88,7 +101,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateTorus.majorRadius", majorRadius);
                 UpdateDefault("CreateTorus.minorRadius", minorRadius);
             }
-            return SolidGeo.CreateTorus(center, normal, majorRadius, minorRadius);
+            var brep = SolidGeo.CreateTorus(center, normal, majorRadius, minorRadius);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateTorus] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         // ================================================================
@@ -97,12 +116,24 @@ namespace Rh.Cmd
 
         public static Brep CreateBox(Box box, bool isPreview = false)
         {
-            return SolidGeo.CreateFromBox(box);
+            var brep = SolidGeo.CreateFromBox(box);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateBox] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateBox(Point3d corner1, Point3d corner2, Vector3d normal, bool isPreview = false)
         {
-            return SolidGeo.CreateFromCorners(corner1, corner2, normal);
+            var brep = SolidGeo.CreateFromCorners(corner1, corner2, normal);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateBox] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateCylinder(Point3d baseCenter, Vector3d normal, double radius, double height,
@@ -114,7 +145,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateCylinder.height", height);
                 UpdateDefault("capEnds", capEnds);
             }
-            return SolidGeo.CreateCylinder(baseCenter, normal, radius, height, capEnds);
+            var brep = SolidGeo.CreateCylinder(baseCenter, normal, radius, height, capEnds);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateCylinder] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateCone(Point3d baseCenter, Vector3d normal, double bottomRadius, double height,
@@ -126,7 +163,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateCone.height", height);
                 UpdateDefault("capEnds", capEnd);
             }
-            return SolidGeo.CreateCone(baseCenter, normal, bottomRadius, height, capEnd);
+            var brep = SolidGeo.CreateCone(baseCenter, normal, bottomRadius, height, capEnd);
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateCone] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateTruncatedCone(Point3d baseCenter, Vector3d normal,
@@ -139,7 +182,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateTruncatedCone.height", height);
                 UpdateDefault("capEnds", capEnds);
             }
-            return SolidGeo.CreateTruncatedCone(baseCenter, normal, bottomRadius, topRadius, height, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateTruncatedCone(baseCenter, normal, bottomRadius, topRadius, height, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateTruncatedCone] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateTube(Point3d baseCenter, Vector3d normal,
@@ -152,7 +201,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateTube.height", height);
                 UpdateDefault("capEnds", capEnds);
             }
-            return SolidGeo.CreateTube(baseCenter, normal, innerRadius, outerRadius, height, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateTube(baseCenter, normal, innerRadius, outerRadius, height, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateTube] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreatePyramid(Point3d baseCenter, Vector3d normal, int sides,
@@ -164,7 +219,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreatePyramid.radius", radius);
                 UpdateDefault("CreatePyramid.height", height);
             }
-            return SolidGeo.CreatePyramid(baseCenter, normal, sides, radius, height, capBase, ActiveTolerance());
+            var brep = SolidGeo.CreatePyramid(baseCenter, normal, sides, radius, height, capBase, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreatePyramid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateTruncatedPyramid(Point3d baseCenter, Vector3d normal, int sides,
@@ -177,8 +238,14 @@ namespace Rh.Cmd
                 UpdateDefault("CreateTruncatedPyramid.topRadius", topRadius);
                 UpdateDefault("CreateTruncatedPyramid.height", height);
             }
-            return SolidGeo.CreateTruncatedPyramid(baseCenter, normal, sides,
+            var brep = SolidGeo.CreateTruncatedPyramid(baseCenter, normal, sides,
                 bottomRadius, topRadius, height, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateTruncatedPyramid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         // ================================================================
@@ -189,7 +256,13 @@ namespace Rh.Cmd
         {
             if (!isPreview)
                 UpdateDefault("capEnds", capEnds);
-            return SolidGeo.CreateExtrudeSolid(profile, direction, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateExtrudeSolid(profile, direction, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateExtrudeSolid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateRevolveSolid(Curve profile, Line axis,
@@ -197,7 +270,13 @@ namespace Rh.Cmd
         {
             if (!isPreview)
                 UpdateDefault("capEnds", capEnds);
-            return SolidGeo.CreateRevolveSolid(profile, axis, startAngle, endAngle, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateRevolveSolid(profile, axis, startAngle, endAngle, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateRevolveSolid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateSweepSolid(Curve rail1, Curve rail2,
@@ -205,7 +284,13 @@ namespace Rh.Cmd
         {
             if (!isPreview)
                 UpdateDefault("capEnds", capEnds);
-            return SolidGeo.CreateSweepSolid(rail1, rail2, sections, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateSweepSolid(rail1, rail2, sections, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateSweepSolid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateLoftSolid(IEnumerable<Curve> curves, int loftType, bool capEnds, bool isPreview = false)
@@ -215,7 +300,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateLoftSolid.loftType", loftType);
                 UpdateDefault("capEnds", capEnds);
             }
-            return SolidGeo.CreateLoftSolid(curves, loftType, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateLoftSolid(curves, loftType, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateLoftSolid] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         // ================================================================
@@ -230,7 +321,13 @@ namespace Rh.Cmd
                 UpdateDefault("pipeCapMode", capMode);
             }
             var mode = (PipeCapMode)capMode;
-            return SolidGeo.CreatePipe(rail, radius, mode, ActiveTolerance(), ActiveAngleTolerance());
+            var brep = SolidGeo.CreatePipe(rail, radius, mode, ActiveTolerance(), ActiveAngleTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreatePipe] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreatePipe(Curve rail, double innerRadius, double outerRadius, int capMode,
@@ -243,8 +340,14 @@ namespace Rh.Cmd
                 UpdateDefault("pipeCapMode", capMode);
             }
             var mode = (PipeCapMode)capMode;
-            return SolidGeo.CreateThickPipe(rail, innerRadius, outerRadius, mode,
+            var brep = SolidGeo.CreateThickPipe(rail, innerRadius, outerRadius, mode,
                 ActiveTolerance(), ActiveAngleTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreatePipe] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         public static Brep CreateSlab(PolylineCurve profile, double offsetDistance, Vector3d direction,
@@ -255,7 +358,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateSlab.offsetDistance", offsetDistance);
                 UpdateDefault("capEnds", capEnds);
             }
-            return SolidGeo.CreateSlab(profile, offsetDistance, direction, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateSlab(profile, offsetDistance, direction, capEnds, ActiveTolerance());
+            if (brep == null || !brep.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateSlab] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return brep;
         }
 
         /// <summary>TODO: CreateTextObject 需要 doc.Fonts 访问，暂未实现</summary>
@@ -264,6 +373,7 @@ namespace Rh.Cmd
         {
             // 需要 ActiveDoc.Fonts.FindOrCreate，违反层级规则
             // 应在 Project 层获取 FontIndex 后传入
+            RhinoApp.WriteLine("[CreateTextObject] 错误：方法暂未实现");
             return null;
         }
 
@@ -274,7 +384,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateThicken.distance", distance);
                 UpdateDefault("CreateThicken.bothSides", bothSides);
             }
-            return SolidGeo.CreateThicken(brep, distance, bothSides, ActiveTolerance());
+            var result = SolidGeo.CreateThicken(brep, distance, bothSides, ActiveTolerance());
+            if (result == null || !result.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateThicken] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -283,12 +399,24 @@ namespace Rh.Cmd
 
         public static Brep CreateCap(Brep brep, bool isPreview = false)
         {
-            return SolidGeo.CreateCap(brep, ActiveTolerance());
+            var result = SolidGeo.CreateCap(brep, ActiveTolerance());
+            if (result == null || !result.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateCap] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return result;
         }
 
         public static Brep CreateSolidFromBreps(IEnumerable<Brep> breps, bool isPreview = false)
         {
-            return SolidGeo.CreateSolidFromBreps(breps, ActiveTolerance());
+            var result = SolidGeo.CreateSolidFromBreps(breps, ActiveTolerance());
+            if (result == null || !result.IsSolid)
+            {
+                RhinoApp.WriteLine("[CreateSolidFromBreps] 错误：Geometry 层返回 null 或非实体");
+                return null;
+            }
+            return result;
         }
     }
 }

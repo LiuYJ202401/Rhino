@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Rhino;
 using Rhino.Geometry;
 using Rh.Data;
 using Rh.Geo.Srf;
@@ -79,9 +80,16 @@ namespace Rh.Cmd
         /// <summary>
         /// 重载 1：平面 + UV 范围
         /// </summary>
-        public static Brep CreatePlane(Plane plane, Interval domainU, Interval domainV, bool isPreview = false)
+        public static Brep CreatePlane(Plane plane, Interval domainU, Interval domainV,
+            int uDegree = 3, int vDegree = 3, bool isPreview = false)
         {
-            return SurfaceGeo.CreateFromPlane(plane, domainU, domainV);
+            var result = SurfaceGeo.CreateFromPlane(plane, domainU, domainV, uDegree, vDegree);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreatePlane] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -89,7 +97,13 @@ namespace Rh.Cmd
         /// </summary>
         public static Brep CreatePlane(Point3d first, Point3d second, Point3d third, bool isPreview = false)
         {
-            return SurfaceGeo.CreateFrom3Points(first, second, third);
+            var result = SurfaceGeo.CreateFrom3Points(first, second, third);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreatePlane] 错误：三点共线，无法创建平面");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -100,7 +114,13 @@ namespace Rh.Cmd
             if (!isPreview)
                 UpdateDefault("CreatePlane.verticalHeight", height);
 
-            return SurfaceGeo.CreateVertical(start, end, height, workPlaneNormal);
+            var result = SurfaceGeo.CreateVertical(start, end, height, workPlaneNormal);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreatePlane] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         public static double GetDefaultPlaneVerticalHeight()
@@ -114,7 +134,13 @@ namespace Rh.Cmd
 
         public static Brep CreatePlaneThroughPt(IEnumerable<Point3d> points, bool isPreview = false)
         {
-            return SurfaceGeo.CreateThroughPoints(points);
+            var result = SurfaceGeo.CreateThroughPoints(points);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreatePlaneThroughPt] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -127,7 +153,13 @@ namespace Rh.Cmd
 
         public static Brep CreateSrfPt(Point3d p1, Point3d p2, Point3d p3, Point3d p4, bool isPreview = false)
         {
-            return SurfaceGeo.CreateFromCorners(p1, p2, p3, p4);
+            var result = SurfaceGeo.CreateFromCorners(p1, p2, p3, p4);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateSrfPt] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -143,7 +175,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateSrfThroughPts.vDegree", vDegree);
             }
 
-            return SurfaceGeo.CreateThroughPointGrid(points, uCount, vCount, uDegree, vDegree);
+            var result = SurfaceGeo.CreateThroughPointGrid(points, uCount, vCount, uDegree, vDegree);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateSrfThroughPts] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         public static int GetDefaultSrfThroughPtsDegree()
@@ -164,7 +202,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateSrfControlPts.vDegree", vDegree);
             }
 
-            return SurfaceGeo.CreateFromControlPointGrid(points, uCount, vCount, uDegree, vDegree);
+            var result = SurfaceGeo.CreateFromControlPointGrid(points, uCount, vCount, uDegree, vDegree);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateSrfControlPts] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         public static int GetDefaultSrfControlPtsDegree()
@@ -184,9 +228,18 @@ namespace Rh.Cmd
         {
             var edgeList = new List<Curve>(edges);
             if (edgeList.Count < 2 || edgeList.Count > 4)
+            {
+                RhinoApp.WriteLine("[CreateEdgeSrf] 错误：边曲线数量必须在 2 到 4 之间");
                 return null;
+            }
 
-            return SurfaceGeo.CreateEdgeSurface(edgeList);
+            var result = SurfaceGeo.CreateEdgeSurface(edgeList);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateEdgeSrf] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -196,7 +249,13 @@ namespace Rh.Cmd
         public static Brep[] CreatePlanarSrf(IEnumerable<Curve> curves, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreatePlanarBreps(curves, tol);
+            var result = SurfaceGeo.CreatePlanarBreps(curves, tol);
+            if (result == null || result.Length == 0)
+            {
+                RhinoApp.WriteLine("[CreatePlanarSrf] 错误：Geometry 层返回 null 或空数组");
+                return result;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -210,7 +269,10 @@ namespace Rh.Cmd
         {
             var curveList = new List<Curve>(curves);
             if (curveList.Count < 2)
+            {
+                RhinoApp.WriteLine("[CreateLoft] 错误：放样曲线数量不能少于 2");
                 return null;
+            }
 
             Point3d s = start == default(Point3d) ? Point3d.Unset : start;
             Point3d e = end == default(Point3d) ? Point3d.Unset : end;
@@ -221,7 +283,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateLoft.closed", closed);
             }
 
-            return SurfaceGeo.CreateLoft(curveList, s, e, loftType, closed);
+            var result = SurfaceGeo.CreateLoft(curveList, s, e, loftType, closed);
+            if (result == null || result.Length == 0)
+            {
+                RhinoApp.WriteLine("[CreateLoft] 错误：Geometry 层返回 null 或空数组");
+                return result;
+            }
+            return result;
         }
 
         public static LoftType GetDefaultLoftType()
@@ -250,7 +318,13 @@ namespace Rh.Cmd
             double iTol = interiorTolerance < 0 ? ActiveTolerance() : interiorTolerance;
             double aTol = angleTolerance < 0 ? ActiveAngleTolerance() : angleTolerance;
 
-            return SurfaceGeo.CreateNetworkSurface(curves, continuity, eTol, iTol, aTol);
+            var result = SurfaceGeo.CreateNetworkSurface(curves, continuity, eTol, iTol, aTol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateNetworkSrf] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -265,7 +339,13 @@ namespace Rh.Cmd
             double iTol = interiorTolerance < 0 ? ActiveTolerance() : interiorTolerance;
             double aTol = angleTolerance < 0 ? ActiveAngleTolerance() : angleTolerance;
 
-            return SurfaceGeo.CreateNetworkSurface(uCurves, vCurves, continuity, eTol, iTol, aTol);
+            var result = SurfaceGeo.CreateNetworkSurface(uCurves, vCurves, continuity, eTol, iTol, aTol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateNetworkSrf] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -283,7 +363,13 @@ namespace Rh.Cmd
             bool closed = false, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateSweep1(rail, shapes, closed, tol);
+            var result = SurfaceGeo.CreateSweep1(rail, shapes, closed, tol);
+            if (result == null || result.Length == 0)
+            {
+                RhinoApp.WriteLine("[CreateSweep] 错误：Geometry 层返回 null 或空数组");
+                return result;
+            }
+            return result;
         }
 
         /// <summary>
@@ -293,7 +379,13 @@ namespace Rh.Cmd
             bool closed = false, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateSweep2(rail1, rail2, shapes, closed, tol);
+            var result = SurfaceGeo.CreateSweep2(rail1, rail2, shapes, closed, tol);
+            if (result == null || result.Length == 0)
+            {
+                RhinoApp.WriteLine("[CreateSweep] 错误：Geometry 层返回 null 或空数组");
+                return result;
+            }
+            return result;
         }
 
         // ================================================================
@@ -309,7 +401,13 @@ namespace Rh.Cmd
         /// </summary>
         public static Brep CreateRevolve(Curve profile, Line axis, bool isPreview = false)
         {
-            return SurfaceGeo.CreateRevolveFull(profile, axis);
+            var result = SurfaceGeo.CreateRevolveFull(profile, axis);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateRevolve] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -326,7 +424,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateRevolve.endAngle", end);
             }
 
-            return SurfaceGeo.CreateRevolvePartial(profile, axis, startAngle, end);
+            var result = SurfaceGeo.CreateRevolvePartial(profile, axis, startAngle, end);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateRevolve] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         public static double GetDefaultRevolveStartAngle()
@@ -346,7 +450,13 @@ namespace Rh.Cmd
         public static Brep CreateRailRevolve(Curve profile, Curve rail, Line axis,
             bool scaleHeight = false, bool isPreview = false)
         {
-            return SurfaceGeo.CreateRailRevolve(profile, rail, axis, scaleHeight);
+            var result = SurfaceGeo.CreateRailRevolve(profile, rail, axis, scaleHeight);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateRailRevolve] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -362,7 +472,13 @@ namespace Rh.Cmd
         /// </summary>
         public static Brep CreateExtrude(Curve profile, Vector3d direction, bool isPreview = false)
         {
-            return SurfaceGeo.CreateExtrudeDirection(profile, direction);
+            var result = SurfaceGeo.CreateExtrudeDirection(profile, direction);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateExtrude] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -371,7 +487,13 @@ namespace Rh.Cmd
         public static Brep CreateExtrude(Curve profile, Curve path, bool cap = false, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateExtrudeAlongCrv(profile, path, cap, tol);
+            var result = SurfaceGeo.CreateExtrudeAlongCrv(profile, path, cap, tol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateExtrude] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -385,7 +507,13 @@ namespace Rh.Cmd
 
             double tol = ActiveTolerance();
             double aTol = ActiveAngleTolerance();
-            return SurfaceGeo.CreateExtrudeTapered(profile, direction, distance, draftAngle, tol, aTol);
+            var result = SurfaceGeo.CreateExtrudeTapered(profile, direction, distance, draftAngle, tol, aTol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateExtrude] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         public static double GetDefaultExtrudeDraftAngle()
@@ -398,7 +526,13 @@ namespace Rh.Cmd
         /// </summary>
         public static Brep CreateExtrude(Curve profile, Point3d apex, bool isPreview = false)
         {
-            return SurfaceGeo.CreateExtrudeToPoint(profile, apex);
+            var result = SurfaceGeo.CreateExtrudeToPoint(profile, apex);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateExtrude] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -419,7 +553,13 @@ namespace Rh.Cmd
             }
 
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreatePatch(geometry, uSpans, vSpans, tol);
+            var result = SurfaceGeo.CreatePatch(geometry, uSpans, vSpans, tol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreatePatch] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -432,7 +572,29 @@ namespace Rh.Cmd
 
         public static Brep CreateCutPlane(Plane plane, IEnumerable<GeometryBase> objects, bool isPreview = false)
         {
-            return SurfaceGeo.CreateCutPlane(plane, objects);
+            var objList = new List<GeometryBase>(objects);
+            if (objList.Count == 0)
+            {
+                RhinoApp.WriteLine("[CreateCutPlane] 错误：对象集合为空");
+                return null;
+            }
+
+            for (int i = 0; i < objList.Count; i++)
+            {
+                if (objList[i] == null)
+                {
+                    RhinoApp.WriteLine("[CreateCutPlane] 错误：对象集合中包含 null 元素");
+                    return null;
+                }
+            }
+
+            var result = SurfaceGeo.CreateCutPlane(plane, objList);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateCutPlane] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -442,7 +604,13 @@ namespace Rh.Cmd
         public static Brep CreateRibbon(Curve curve, double distance, Plane plane, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateRibbon(curve, distance, plane, tol);
+            var result = SurfaceGeo.CreateRibbon(curve, distance, plane, tol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateRibbon] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -452,7 +620,13 @@ namespace Rh.Cmd
         public static Brep CreateFin(Curve curve, BrepFace face, double height, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateFin(curve, face, height, tol);
+            var result = SurfaceGeo.CreateFin(curve, face, height, tol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateFin] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -469,7 +643,13 @@ namespace Rh.Cmd
             }
 
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateDrape(objects, plane, uSpacing, vSpacing, tol);
+            var result = SurfaceGeo.CreateDrape(objects, plane, uSpacing, vSpacing, tol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateDrape] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -486,7 +666,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateHeightfield.samplesY", samplesY);
             }
 
-            return SurfaceGeo.CreateHeightfield(imagePath, plane, width, heightSize, maxHeight, samplesX, samplesY);
+            var result = SurfaceGeo.CreateHeightfield(imagePath, plane, width, heightSize, maxHeight, samplesX, samplesY);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateHeightfield] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -496,7 +682,13 @@ namespace Rh.Cmd
         public static Brep CreateDevLoft(Curve rail1, Curve rail2, bool isPreview = false)
         {
             double tol = ActiveTolerance();
-            return SurfaceGeo.CreateDevLoft(rail1, rail2, tol);
+            var result = SurfaceGeo.CreateDevLoft(rail1, rail2, tol);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateDevLoft] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
     }
 }

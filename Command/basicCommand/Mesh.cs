@@ -122,7 +122,13 @@ namespace Rh.Cmd
                 UpdateDefault("boxCount.y", yCount);
                 UpdateDefault("boxCount.z", zCount);
             }
-            return MeshGeo.CreateFromBoundingBox(bbox, xCount, yCount, zCount);
+            var result = MeshGeo.CreateFromBoundingBox(bbox, xCount, yCount, zCount);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshBox] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>创建网格长方体（角点 + 法向量方式）</summary>
@@ -135,7 +141,13 @@ namespace Rh.Cmd
                 UpdateDefault("boxCount.y", yCount);
                 UpdateDefault("boxCount.z", zCount);
             }
-            return MeshGeo.CreateFromCorners(corner1, corner2, normal, xCount, yCount, zCount);
+            var result = MeshGeo.CreateFromCorners(corner1, corner2, normal, xCount, yCount, zCount);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshBox] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ------------------------------------------------------------
@@ -152,7 +164,13 @@ namespace Rh.Cmd
                 UpdateDefault("segments", segments);
                 UpdateDefault("rings", rings);
             }
-            return MeshGeo.CreateFromSphere(center, normal, radius, segments, rings);
+            var result = MeshGeo.CreateFromSphere(center, normal, radius, segments, rings);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshSphere] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>创建二十面体细分球</summary>
@@ -269,7 +287,13 @@ namespace Rh.Cmd
         /// <summary>将 Surface 转换为网格</summary>
         public static Mesh CreateMeshFromSurface(Surface surface, MeshingParameters parameters, bool isPreview = false)
         {
-            return MeshGeo.CreateFromSurface(surface, parameters);
+            var result = MeshGeo.CreateFromSurface(surface, parameters);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshFromSurface] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>从封闭多段线创建网格</summary>
@@ -287,7 +311,13 @@ namespace Rh.Cmd
         /// <summary>沿向量挤出曲线创建网格</summary>
         public static Mesh CreateMeshExtrusion(Curve profile, Vector3d direction, bool isPreview = false)
         {
-            return MeshGeo.CreateExtrusion(profile, direction);
+            var result = MeshGeo.CreateExtrusion(profile, direction);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshExtrusion] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         // ================================================================
@@ -304,7 +334,13 @@ namespace Rh.Cmd
         public static Mesh CreateMeshFromTessellation(IEnumerable<Point3d> points,
             IEnumerable<IEnumerable<Point3d>> edges, Plane plane, bool allowNewVertices, bool isPreview = false)
         {
-            return MeshGeo.CreateFromTessellation(points, edges, plane, allowNewVertices);
+            var result = MeshGeo.CreateFromTessellation(points, edges, plane, allowNewVertices);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshFromTessellation] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -326,7 +362,13 @@ namespace Rh.Cmd
                 UpdateDefault("CreateMeshPatch.trimback", trimback);
             }
 
-            return MeshGeo.CreatePatch(points, curves, angleToleranceRadians, divisions, trimback);
+            var result = MeshGeo.CreatePatch(points, curves, angleToleranceRadians, divisions, trimback);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateMeshPatch] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>
@@ -350,7 +392,13 @@ namespace Rh.Cmd
                 UpdateDefault("quadRemesh.targetQuadCount", targetQuadCount);
                 UpdateDefault("quadRemesh.adaptSize", adaptSize);
             }
-            return MeshGeo.QuadRemeshFromBrep(brep, targetQuadCount, adaptSize);
+            var result = MeshGeo.QuadRemeshFromBrep(brep, targetQuadCount, adaptSize);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateQuadRemesh] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
         }
 
         /// <summary>对 Mesh 进行四边形重网格化</summary>

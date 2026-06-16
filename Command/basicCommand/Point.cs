@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Rhino;
 using Rhino.Geometry;
 
 namespace Rh.Cmd
@@ -26,7 +27,10 @@ namespace Rh.Cmd
         public static Point3d CreatePoint(Point3d point, bool isPreview = false)
         {
             if (!point.IsValid)
+            {
+                RhinoApp.WriteLine("[CreatePoint] 错误：输入点无效");
                 return Point3d.Unset;
+            }
 
             return point;
         }
@@ -46,7 +50,10 @@ namespace Rh.Cmd
             var point = new Point3d(x, y, z);
 
             if (!point.IsValid)
+            {
+                RhinoApp.WriteLine("[CreatePoint] 错误：坐标分量无效（NaN 或无穷大）");
                 return Point3d.Unset;
+            }
 
             return point;
         }
@@ -67,7 +74,10 @@ namespace Rh.Cmd
             var result = new List<Point3d>();
 
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreatePoints] 错误：输入点集合为 null");
                 return result;
+            }
 
             foreach (Point3d pt in points)
             {
@@ -103,7 +113,10 @@ namespace Rh.Cmd
             bool isPreview = false)
         {
             if (xCount < 1 || yCount < 1)
+            {
+                RhinoApp.WriteLine("[CreatePointGrid] 错误：点数必须大于 0");
                 return null;
+            }
 
             // 计算步长（点数-1为间隔数）
             double xStep = 0;
@@ -148,18 +161,27 @@ namespace Rh.Cmd
         public static PointCloud CreatePointCloud(IEnumerable<Point3d> points, bool isPreview = false)
         {
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreatePointCloud] 错误：输入点集合为 null");
                 return null;
+            }
 
             var pointList = new List<Point3d>(points);
 
             if (pointList.Count == 0)
+            {
+                RhinoApp.WriteLine("[CreatePointCloud] 错误：点集合为空");
                 return null;
+            }
 
             // 过滤无效点
             pointList.RemoveAll(p => !p.IsValid);
 
             if (pointList.Count == 0)
+            {
+                RhinoApp.WriteLine("[CreatePointCloud] 错误：过滤后无有效点");
                 return null;
+            }
 
             return new PointCloud(pointList);
         }
@@ -179,12 +201,18 @@ namespace Rh.Cmd
         public static PointCloud CreatePointCloudFromMesh(Mesh mesh, bool isPreview = false)
         {
             if (mesh == null)
+            {
+                RhinoApp.WriteLine("[CreatePointCloudFromMesh] 错误：输入网格为 null");
                 return null;
+            }
 
             Point3d[] vertices = mesh.Vertices.ToPoint3dArray();
 
             if (vertices.Length == 0)
+            {
+                RhinoApp.WriteLine("[CreatePointCloudFromMesh] 错误：网格无顶点");
                 return null;
+            }
 
             return new PointCloud(vertices);
         }
@@ -243,7 +271,10 @@ namespace Rh.Cmd
             bool isPreview = false)
         {
             if (cloud == null)
+            {
+                RhinoApp.WriteLine("[RemovePointsFromCloud] 错误：输入点云为 null");
                 return null;
+            }
 
             // 排序并去重，从大到小排序以便从后往前移除
             var sortedIndices = new SortedSet<int>(indices, Comparer<int>.Create((a, b) => b.CompareTo(a)));
@@ -283,7 +314,10 @@ namespace Rh.Cmd
             bool isPreview = false)
         {
             if (cloud == null)
+            {
+                RhinoApp.WriteLine("[ReducePointCloud] 错误：输入点云为 null");
                 return null;
+            }
 
             if (removeCount < 0 || removeCount >= cloud.Count)
             {

@@ -81,17 +81,24 @@ namespace Rh.Geo.Sld
             return Brep.CreateFromBox(box);
         }
 
-        /// <summary>从角点和法向量创建长方体实体</summary>
+        /// <summary>从两底面角点和法向量创建长方体实体（法向量长度=高度）</summary>
         public static Brep CreateFromCorners(Point3d corner1, Point3d corner2, Vector3d normal)
         {
             if (!normal.IsValid || normal.IsZero)
                 return null;
-            normal.Unitize();
-            var plane = new Plane(corner1, normal);
-            var bbox = new BoundingBox(corner1, corner2);
-            var x = new Interval(bbox.Min.X, bbox.Max.X);
-            var y = new Interval(bbox.Min.Y, bbox.Max.Y);
-            var z = new Interval(bbox.Min.Z, bbox.Max.Z);
+
+            // normal 的方向 = 底面法线，normal 的长度 = 高度
+            double height = normal.Length;
+            var dir = normal;
+            dir.Unitize();
+
+            // 将 corner2 转换到以 corner1 为原点、normal 方向为法线的平面局部坐标系
+            var plane = new Plane(corner1, dir);
+            plane.RemapToPlaneSpace(corner2, out Point3d local);
+
+            var x = new Interval(0, local.X);
+            var y = new Interval(0, local.Y);
+            var z = new Interval(0, height);
             var box = new Box(plane, x, y, z);
             return Brep.CreateFromBox(box);
         }
@@ -121,29 +128,28 @@ namespace Rh.Geo.Sld
             return cone.ToBrep(capEnd);
         }
 
-        /// <summary>创建截锥体实体（loft 上下两圆实现）</summary>
+        /// <summary>创建截锥体实体</summary>
         public static Brep CreateTruncatedCone(Point3d baseCenter, Vector3d normal,
             double bottomRadius, double topRadius, double height, bool capEnds, double tolerance)
         {
             if (bottomRadius <= 0 || topRadius <= 0 || height <= 0)
                 return null;
             normal.Unitize();
+
+            // 使用 RevSurface 构造截锥体（RhinoCommon 官方推荐方式）
             var bottomPlane = new Plane(baseCenter, normal);
             var topCenter = baseCenter + normal * height;
-            var topPlane = new Plane(topCenter, normal);
-
             var bottomCircle = new Circle(bottomPlane, bottomRadius);
-            var topCircle = new Circle(topPlane, topRadius);
+            var topCircle = new Circle(new Plane(topCenter, normal), topRadius);
 
-            var breps = Brep.CreateFromLoft(
-                new Curve[] { bottomCircle.ToNurbsCurve(), topCircle.ToNurbsCurve() },
-                Point3d.Unset, Point3d.Unset, LoftType.Straight, false);
-            if (breps == null || breps.Length == 0)
-                return null;
-            var result = breps[0];
-            if (capEnds)
-                result = CapPlanarHoles(result, tolerance);
-            return result;
+            // 母线：从底圆 PointAt(0) 到顶圆 PointAt(0)
+            var p1 = bottomCircle.PointAt(0);
+            var p2 = topCircle.PointAt(0);
+            var shapeCurve = new LineCurve(p1, p2);
+            var axis = new Line(bottomCircle.Center, topCircle.Center);
+            var revSrf = RevSurface.Create(shapeCurve, axis);
+
+            return Brep.CreateFromRevSurface(revSrf, capEnds, capEnds);
         }
 
         /// <summary>创建中空圆柱实体</summary>
@@ -179,32 +185,30 @@ namespace Rh.Geo.Sld
             if (basePoly == null)
                 return null;
 
-            var brep = new Brep();
+            var sideBreps = new List<Brep>();
 
             // 侧面三角形
             for (int i = 0; i < sides; i++)
             {
                 int next = (i + 1) % sides;
-                var p1 = basePoly[i];
-                var p2 = basePoly[next];
-                brep.Append(Brep.CreateFromCornerPoints(p1, p2, apex, tolerance));
+                var face = Brep.CreateFromCornerPoints(basePoly[i], basePoly[next], apex, tolerance);
+                if (face != null)
+                    sideBreps.Add(face);
             }
 
-            // 底盖
+            if (sideBreps.Count == 0)
+                return null;
+
+            // 合并侧面为开放壳，再由 CapPlanarHoles 统一封盖
+            var joined = Brep.JoinBreps(sideBreps, tolerance);
+            if (joined == null || joined.Length == 0)
+                return null;
+
+            var result = joined[0];
             if (capBase)
-            {
-                var baseCurve = Curve.CreateControlPointCurve(basePoly);
-                if (baseCurve != null)
-                {
-                    var caps = Brep.CreatePlanarBreps(baseCurve, tolerance);
-                    if (caps != null)
-                        foreach (var cap in caps)
-                            brep.Append(cap);
-                }
-            }
+                result = CapPlanarHoles(result, tolerance);
 
-            brep.JoinNakedEdges(2 * tolerance);
-            return brep;
+            return result;
         }
 
         /// <summary>创建截棱锥实体</summary>
@@ -223,39 +227,31 @@ namespace Rh.Geo.Sld
             if (bottomPoly == null || topPoly == null)
                 return null;
 
-            var brep = new Brep();
+            var sideBreps = new List<Brep>();
 
             // 侧面四边形
             for (int i = 0; i < sides; i++)
             {
                 int next = (i + 1) % sides;
-                brep.Append(Brep.CreateFromCornerPoints(
-                    bottomPoly[i], bottomPoly[next], topPoly[next], topPoly[i], tolerance));
+                var face = Brep.CreateFromCornerPoints(
+                    bottomPoly[i], bottomPoly[next], topPoly[next], topPoly[i], tolerance);
+                if (face != null)
+                    sideBreps.Add(face);
             }
 
-            // 封盖
+            if (sideBreps.Count == 0)
+                return null;
+
+            // 合并侧面为开放壳，再由 CapPlanarHoles 统一封盖
+            var joined = Brep.JoinBreps(sideBreps, tolerance);
+            if (joined == null || joined.Length == 0)
+                return null;
+
+            var result = joined[0];
             if (capEnds)
-            {
-                var bottomCurve = Curve.CreateControlPointCurve(bottomPoly);
-                var topCurve = Curve.CreateControlPointCurve(topPoly);
-                if (bottomCurve != null)
-                {
-                    var caps = Brep.CreatePlanarBreps(bottomCurve, tolerance);
-                    if (caps != null)
-                        foreach (var cap in caps)
-                            brep.Append(cap);
-                }
-                if (topCurve != null)
-                {
-                    var caps = Brep.CreatePlanarBreps(topCurve, tolerance);
-                    if (caps != null)
-                        foreach (var cap in caps)
-                            brep.Append(cap);
-                }
-            }
+                result = CapPlanarHoles(result, tolerance);
 
-            brep.JoinNakedEdges(2 * tolerance);
-            return brep;
+            return result;
         }
 
         // ================================================================
@@ -340,14 +336,11 @@ namespace Rh.Geo.Sld
             var pipes = Brep.CreatePipe(rail, radius, false, capMode, true, tolerance, angleTolerance);
             if (pipes == null || pipes.Length == 0)
                 return null;
-            // 合并多个管道段
             if (pipes.Length == 1)
                 return pipes[0];
-            var combined = new Brep();
-            foreach (var p in pipes)
-                combined.Append(p);
-            combined.JoinNakedEdges(2 * tolerance);
-            return combined;
+            // 合并多个管道段为单一实体
+            var joined = Brep.JoinBreps(pipes, tolerance);
+            return (joined != null && joined.Length > 0) ? joined[0] : null;
         }
 
         /// <summary>创建双壁厚壁管道</summary>
@@ -365,11 +358,9 @@ namespace Rh.Geo.Sld
                 return null;
             if (pipes.Length == 1)
                 return pipes[0];
-            var combined = new Brep();
-            foreach (var p in pipes)
-                combined.Append(p);
-            combined.JoinNakedEdges(2 * tolerance);
-            return combined;
+            // 合并多个管道段为单一实体
+            var joined = Brep.JoinBreps(pipes, tolerance);
+            return (joined != null && joined.Length > 0) ? joined[0] : null;
         }
 
         /// <summary>偏移多段线并加盖形成实体板（原轮廓与偏移轮廓之间为板面）</summary>
@@ -387,14 +378,19 @@ namespace Rh.Geo.Sld
             if (offsetCurves == null || offsetCurves.Length == 0)
                 return null;
 
-            var brep = new Brep();
             var original = profile.ToNurbsCurve();
             var offset = offsetCurves[0].ToNurbsCurve();
+
+            var breps = new List<Brep>();
 
             // 侧面：原轮廓与偏移轮廓之间创建直纹面
             var ruled = NurbsSurface.CreateRuledSurface(original, offset);
             if (ruled != null)
-                brep.Append(Brep.CreateFromSurface(ruled));
+            {
+                var sideBrep = Brep.CreateFromSurface(ruled);
+                if (sideBrep != null)
+                    breps.Add(sideBrep);
+            }
 
             // 封盖：原轮廓平面和偏移轮廓平面
             if (capEnds)
@@ -403,14 +399,21 @@ namespace Rh.Geo.Sld
                 var caps2 = Brep.CreatePlanarBreps(offset, tolerance);
                 if (caps1 != null)
                     foreach (var c in caps1)
-                        brep.Append(c);
+                        breps.Add(c);
                 if (caps2 != null)
                     foreach (var c in caps2)
-                        brep.Append(c);
+                        breps.Add(c);
             }
 
-            brep.JoinNakedEdges(2 * tolerance);
-            return brep;
+            if (breps.Count == 0)
+                return null;
+
+            // 合并所有面为单一实体
+            var joined = Brep.JoinBreps(breps, tolerance);
+            if (joined == null || joined.Length == 0)
+                return null;
+
+            return joined[0];
         }
 
         /// <summary>将开放曲面偏移加厚形成闭合实体</summary>
@@ -418,15 +421,20 @@ namespace Rh.Geo.Sld
         {
             if (brep == null || !brep.IsValid)
                 return null;
-            var result = new Brep();
+            var breps = new List<Brep>();
             foreach (var face in brep.Faces)
             {
                 var thickened = Brep.CreateFromOffsetFace(face, distance, tolerance, bothSides, true);
                 if (thickened != null)
-                    result.Append(thickened);
+                    breps.Add(thickened);
             }
-            result.JoinNakedEdges(2 * tolerance);
-            return result.Faces.Count > 0 ? result : null;
+            if (breps.Count == 0)
+                return null;
+            // 合并所有面为单一实体
+            var joined = Brep.JoinBreps(breps, tolerance);
+            if (joined == null || joined.Length == 0)
+                return null;
+            return joined[0];
         }
 
         // ================================================================

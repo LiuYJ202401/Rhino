@@ -15,9 +15,13 @@ namespace Rh.Geo.Srf
         // 平面类
         // ================================================================
 
-        public static Brep CreateFromPlane(Plane plane, Interval domainU, Interval domainV)
+        public static Brep CreateFromPlane(Plane plane, Interval domainU, Interval domainV,
+            int uDegree = 3, int vDegree = 3)
         {
-            var ns = NurbsSurface.CreateFromPlane(plane, domainU, domainV, 2, 2, 2, 2);
+            // pointCount = degree + 1（NURBS 最小要求）
+            int uCount = uDegree + 1;
+            int vCount = vDegree + 1;
+            var ns = NurbsSurface.CreateFromPlane(plane, domainU, domainV, uDegree, vDegree, uCount, vCount);
             if (ns == null)
                 return null;
             return Brep.CreateFromSurface(ns);
@@ -228,22 +232,18 @@ namespace Rh.Geo.Srf
                 return breps[0];
 
             // 加盖：从扫掠结果的裸边提取边界曲线，用 CreatePlanarBreps 封面
-            // 此方法适用于任意路径形状（直线/曲线/锥度），不依赖 profile 平移
-            var result = new Brep();
-            result.Append(breps[0]);
+            var allBreps = new List<Brep> { breps[0] };
 
             // 提取裸边（nakedOnly=true: 仅获取只属于一个面的开放边缘）
             Curve[] nakedEdges = breps[0].DuplicateEdgeCurves(true);
             if (nakedEdges == null || nakedEdges.Length == 0)
-                return result;
+                return breps[0];
 
             // 将裸边按闭合环分组（每端开口可能由多条边组成，需 JoinEdges）
-            // JoinCurves 会将相连的边合并为闭合曲线
             Curve[] loops = Curve.JoinCurves(nakedEdges);
 
             foreach (Curve loop in loops)
             {
-                // 仅对闭合且共面的曲线封面
                 if (!loop.IsClosed)
                     continue;
 
@@ -251,11 +251,19 @@ namespace Rh.Geo.Srf
                 if (caps != null)
                 {
                     foreach (Brep capBrep in caps)
-                        result.Append(capBrep);
+                        allBreps.Add(capBrep);
                 }
             }
 
-            return result;
+            if (allBreps.Count <= 1)
+                return breps[0];
+
+            // 合并所有面为单一实体
+            var joined = Brep.JoinBreps(allBreps, tolerance);
+            if (joined == null || joined.Length == 0)
+                return breps[0];
+
+            return joined[0];
         }
 
         public static Brep CreateExtrudeTapered(Curve profile, Vector3d direction, double distance,

@@ -29,7 +29,7 @@
 | 功能 | 从包围盒创建网格长方体 |
 | 输入 | `BoundingBox bbox` — 包围盒，`int xCount` — X 方向面数 [可选]，`int yCount` — Y 方向面数 [可选]，`int zCount` — Z 方向面数 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格长方体 |
-| 报错 | 包围盒无效时返回 null |
+| 报错 | 包围盒无效时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromBox(bbox, xCount, yCount, zCount)` |
 
 **重载 2：角点 + 法向量**
@@ -39,7 +39,7 @@
 | 功能 | 从两对角点和法向量创建网格长方体 |
 | 输入 | `Point3d corner1` — 第一角点，`Point3d corner2` — 对角点，`Vector3d normal` — 底面法向量，`int xCount` — X 面数 [可选]，`int yCount` — Y 面数 [可选]，`int zCount` — Z 面数 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格长方体 |
-| 报错 | 角点重合或法向量无效时返回 null |
+| 报错 | 角点重合或法向量无效时输出错误消息并返回 null |
 | RhinoCommon | Geometry 层构造 Box 后调用 `Mesh.CreateFromBox(Box, ...)` |
 
 ### CreateMeshSphere
@@ -55,7 +55,7 @@
 | 功能 | 在指定朝向创建网格球体 |
 | 输入 | `Point3d center` — 球心，`Vector3d normal` — 方向轴，`double radius` — 半径，`int segments` — 经度分段数 [可选]，`int rings` — 纬度分段数 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格球体 |
-| 报错 | radius ≤ 0 或分段数 < 3 时返回 null |
+| 报错 | radius ≤ 0 或分段数 < 3 时输出错误消息并返回 null |
 | RhinoCommon | Geometry 层构造 Sphere 后调用 `Mesh.CreateFromSphere(sphere, segments, rings)` |
 
 **重载 2：二十面体球**
@@ -65,7 +65,7 @@
 | 功能 | 创建二十面体细分球（顶点均匀分布） |
 | 输入 | `Point3d center` — 球心，`Vector3d normal` — 方向轴，`double radius` — 半径，`int subdivisions` — 细分级别 (0~7) [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 二十面体球 |
-| 报错 | radius ≤ 0 或细分级别越界时返回 null |
+| 报错 | radius ≤ 0 或细分级别越界时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateIcoSphere(sphere, subdivisions)` |
 
 ### CreateMeshCylinder
@@ -77,7 +77,7 @@
 | 功能 | 创建网格圆柱体 |
 | 输入 | `Point3d center` — 底面中心，`Vector3d normal` — 方向轴，`double radius` — 半径，`double height` — 高度，`int vertical` — 垂直分段数 [可选]，`int around` — 环向分段数 [可选]，`bool capEnds` — 是否封盖 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格圆柱 |
-| 报错 | radius/height ≤ 0 或分段数 < 3 时返回 null |
+| 报错 | radius/height ≤ 0 或分段数 < 3 时输出错误消息并返回 null |
 | RhinoCommon | Geometry 层构造 Cylinder 后调用 `Mesh.CreateFromCylinder(cyl, vertical, around)` |
 
 ### CreateMeshCone
@@ -89,7 +89,7 @@
 | 功能 | 创建网格圆锥体 |
 | 输入 | `Point3d baseCenter` — 底面中心，`Vector3d normal` — 方向轴，`double bottomRadius` — 底面半径，`double height` — 高度，`int vertical` — 垂直分段数 [可选]，`int around` — 环向分段数 [可选]，`bool capEnd` — 是否封底 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格圆锥 |
-| 报错 | radius/height ≤ 0 或分段数 < 3 时返回 null |
+| 报错 | radius/height ≤ 0 或分段数 < 3 时输出错误消息并返回 null |
 | RhinoCommon | Geometry 层构造 Cone 后调用 `Mesh.CreateFromCone(cone, vertical, around)` |
 
 ### CreateMeshTorus
@@ -101,7 +101,7 @@
 | 功能 | 创建网格圆环 |
 | 输入 | `Point3d center` — 中心，`Vector3d normal` — 方向轴，`double majorRadius` — 主半径，`double minorRadius` — 副半径，`int majorSegments` — 主方向分段数 [可选]，`int minorSegments` — 副方向分段数 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格圆环 |
-| 报错 | 半径 ≤ 0 或 minorRadius ≥ majorRadius 时返回 null |
+| 报错 | 半径 ≤ 0 或 minorRadius ≥ majorRadius 时输出错误消息并返回 null |
 | RhinoCommon | Geometry 层构造 Torus 后调用 `Mesh.CreateFromTorus(torus, majorSegments, minorSegments)` |
 
 ### CreateMeshEllipsoid
@@ -113,7 +113,7 @@
 | 功能 | 创建网格椭球体 |
 | 输入 | `Point3d center` — 中心，`Vector3d normal` — 方向轴，`Vector3d radii` — 三轴半径（x=赤道, y=赤道, z=极），`int segments` — 经度分段数 [可选]，`int rings` — 纬度分段数 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格椭球 |
-| 报错 | 任一轴半径 ≤ 0 时返回 null |
+| 报错 | 任一轴半径 ≤ 0 时输出错误消息并返回 null |
 | RhinoCommon | 无直接 API，Geometry 层创建球体后非均匀缩放（`Transform.Scale`） |
 
 ### CreateMeshPlane
@@ -125,7 +125,7 @@
 | 功能 | 创建网格平面 |
 | 输入 | `Plane plane` — 所在平面，`Interval domainU` — X 方向范围，`Interval domainV` — Y 方向范围，`int xCount` — X 面数 [可选]，`int yCount` — Y 面数 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格平面 |
-| 报错 | 范围为零时返回 null |
+| 报错 | 范围为零时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromPlane(plane, domainU, domainV, xCount, yCount)` |
 
 ---
@@ -141,7 +141,7 @@
 | 功能 | 将 Brep（多重曲面/实体）转换为网格 |
 | 输入 | `Brep brep` — 源实体，`MeshingParameters parameters` — 网格化参数 [可选，默认 Default]，`bool isPreview = false` |
 | 输出 | `Mesh[]` — 每个面的网格数组 |
-| 报错 | brep 无效时返回 null |
+| 报错 | brep 无效时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromBrep(brep, parameters)` |
 
 ### CreateMeshFromSurface
@@ -153,7 +153,7 @@
 | 功能 | 将单个曲面转换为网格 |
 | 输入 | `Surface surface` — 源曲面，`MeshingParameters parameters` — 网格化参数 [可选，默认 Default]，`bool isPreview = false` |
 | 输出 | `Mesh[]` — 网格数组 |
-| 报错 | surface 无效时返回 null |
+| 报错 | surface 无效时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromSurface(surface, parameters)` |
 
 ### CreateMeshFromPolyline
@@ -165,7 +165,7 @@
 | 功能 | 从封闭多段线创建网格（拉伸或平面填充） |
 | 输入 | `Polyline polyline` — 封闭多段线，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格 |
-| 报错 | 多段线未封闭或点数 < 3 时返回 null |
+| 报错 | 多段线未封闭或点数 < 3 时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromClosedPolyline(polyline)` |
 
 ### CreateMeshFromPlanarBoundary
@@ -177,7 +177,7 @@
 | 功能 | 从封闭平面曲线创建平面网格 |
 | 输入 | `Curve boundary` — 封闭平面曲线，`double tolerance` — 公差 [可选，动态值]，`bool isPreview = false` |
 | 输出 | `Mesh` — 平面网格 |
-| 报错 | 曲线未封闭或非平面时返回 null |
+| 报错 | 曲线未封闭或非平面时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromPlanarBoundary(boundary, MeshingParameters.Default, tolerance)` |
 
 ### CreateMeshExtrusion
@@ -189,7 +189,7 @@
 | 功能 | 沿向量挤出曲线创建网格 |
 | 输入 | `Curve profile` — 轮廓曲线，`Vector3d direction` — 挤出方向（长度即高度），`bool isPreview = false` |
 | 输出 | `Mesh` — 挤出网格 |
-| 报错 | 曲线无效或方向为零向量时返回 null |
+| 报错 | 曲线无效或方向为零向量时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateExtrusion(profile, direction)` |
 
 ---
@@ -205,7 +205,7 @@
 | 功能 | 从点集创建凸包网格 |
 | 输入 | `IEnumerable<Point3d> points` — 点集，`double tolerance` — 公差 [可选，动态值]，`bool isPreview = false` |
 | 输出 | `Mesh` — 凸包网格 |
-| 报错 | 点数不足或共面时返回 null |
+| 报错 | 点数不足或共面时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateConvexHull3D(points, out facets, tolerance, angleTolerance)` |
 
 ### CreateMeshFromTessellation
@@ -217,7 +217,7 @@
 | 功能 | 从点集和固定边约束创建三角化网格 |
 | 输入 | `IEnumerable<Point3d> points` — 点集，`IEnumerable<IEnumerable<Point3d>> edges` — 固定边，`Plane plane` — 所在平面，`bool allowNewVertices` — 是否允许新增顶点，`bool isPreview = false` |
 | 输出 | `Mesh` — 三角化网格 |
-| 报错 | 点数不足时返回 null |
+| 报错 | 点数不足时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreateFromTessellation(points, edges, plane, allowNewVertices)` |
 
 ### CreateMeshPatch
@@ -231,7 +231,7 @@
 | 功能 | 从点集和约束曲线创建网格补面 |
 | 输入 | `IEnumerable<Point3d> points` — 点集，`IEnumerable<Curve> curves` — 约束曲线 [可选 null]，`double angleToleranceRadians` — 曲线转多段线的角度公差，`int divisions` — 边界分割数，`bool trimback` — 是否裁剪外围，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格曲面 |
-| 报错 | 点数不足且无曲线时返回 null |
+| 报错 | 点数不足且无曲线时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.CreatePatch(null, angleTol, null, null, curves, points, trimback, divisions)` |
 
 **重载 2：简化版（仅点集）**
@@ -241,7 +241,7 @@
 | 功能 | 从点集创建平面网格补面 |
 | 输入 | `IEnumerable<Point3d> points` — 点集，`double tolerance` — 公差，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格曲面 |
-| 报错 | 点数 < 3 时返回 null |
+| 报错 | 点数 < 3 时输出错误消息并返回 null |
 | RhinoCommon | Geometry 层用 `Plane.FitPlaneToPoints` + `Mesh.CreateFromTessellation` |
 
 ---
@@ -257,7 +257,7 @@
 | 功能 | 对 Brep 或 Mesh 进行四边形重网格化 |
 | 输入 | `object geometry` — 源几何体（Brep 或 Mesh），`int targetQuadCount` — 目标四边形数量 [可选]，`double adaptSize` — 自适应尺寸 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 四边形网格 |
-| 报错 | 几何体无效时返回 null |
+| 报错 | 几何体无效时输出错误消息并返回 null |
 | RhinoCommon | `Mesh.QuadRemesh(Brep/Mesh, QuadRemeshParameters)` |
 
 ---

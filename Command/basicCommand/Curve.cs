@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Rhino;
 using Rhino.Geometry;
 using Rh.Data;
 using Rh.Geo;
@@ -125,7 +126,10 @@ namespace Rh.Cmd
         public static Circle CreateCircle(Plane plane, Point3d center, double radius, bool isPreview = false)
         {
             if (radius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：半径 ≤ 0");
                 return Circle.Unset;
+            }
 
             Circle circle = CircleGeo.CreateFromCenterRadius(plane, center, radius);
 
@@ -142,7 +146,10 @@ namespace Rh.Cmd
         public static Circle CreateCircle(Point3d center, Vector3d normal, double radius, bool isPreview = false)
         {
             if (radius <= 0 || normal.IsZero)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：半径 ≤ 0 或法向量为零");
                 return Circle.Unset;
+            }
 
             Plane plane = new Plane(center, normal);
             Circle circle = CircleGeo.CreateFromCenterRadius(plane, center, radius);
@@ -160,7 +167,10 @@ namespace Rh.Cmd
         public static Circle CreateCircle(Plane plane, double radius, bool isPreview = false)
         {
             if (radius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：半径 ≤ 0");
                 return Circle.Unset;
+            }
 
             Circle circle = CircleGeo.CreateFromCenterRadius(plane, plane.Origin, radius);
 
@@ -177,7 +187,10 @@ namespace Rh.Cmd
         public static Circle CreateCircle(Plane plane, Point3d point1, Point3d point2, bool isPreview = false)
         {
             if (point1 == point2)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：直径两端点重合");
                 return Circle.Unset;
+            }
 
             Circle circle = CircleGeo.CreateFromDiameter(plane, point1, point2);
 
@@ -196,7 +209,10 @@ namespace Rh.Cmd
             Circle circle = CircleGeo.CreateFrom3Points(p1, p2, p3);
 
             if (!circle.IsValid)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：三点无法确定有效圆");
                 return Circle.Unset;
+            }
 
             if (!isPreview)
                 UpdateDefault("CreateCircle.radius", circle.Radius);
@@ -211,12 +227,18 @@ namespace Rh.Cmd
         public static Circle CreateCircle(Point3d startPoint, Vector3d tangentAtStart, Point3d endPoint, bool isPreview = false)
         {
             if (tangentAtStart.IsZero || startPoint == endPoint)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：切向量为零或起点与终点重合");
                 return Circle.Unset;
+            }
 
             Circle circle = CircleGeo.CreateFromTangent(startPoint, tangentAtStart, endPoint);
 
             if (!circle.IsValid)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：起点切向终点无法构造有效圆");
                 return Circle.Unset;
+            }
 
             if (!isPreview)
                 UpdateDefault("CreateCircle.radius", circle.Radius);
@@ -233,7 +255,10 @@ namespace Rh.Cmd
             double tolerance, bool isPreview = false)
         {
             if (curve1 == null || curve2 == null || radius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateCircle] 错误：曲线为空或半径 ≤ 0");
                 return new Circle[0];
+            }
 
             // 在曲线中点附近搜索相切圆角
             double t0 = curve1.Domain.Mid;
@@ -244,6 +269,7 @@ namespace Rh.Cmd
             if (filletArc.IsValid)
                 return new Circle[] { new Circle(filletArc.Plane, filletArc.Center, filletArc.Radius) };
 
+            RhinoApp.WriteLine("[CreateCircle] 错误：未能生成相切圆角圆");
             return new Circle[0];
         }
 
@@ -259,7 +285,10 @@ namespace Rh.Cmd
             double startAngle, double endAngle, bool isPreview = false)
         {
             if (radius <= 0 || endAngle <= startAngle)
+            {
+                RhinoApp.WriteLine("[CreateArc] 错误：半径 ≤ 0 或终止角度不大于起始角度");
                 return Arc.Unset;
+            }
 
             Arc arc = ArcGeo.CreateFromCenterAngle(plane, center, radius, startAngle, endAngle);
 
@@ -281,7 +310,10 @@ namespace Rh.Cmd
             Arc arc = ArcGeo.CreateFrom3Points(start, pointOnArc, end);
 
             if (!arc.IsValid)
+            {
+                RhinoApp.WriteLine("[CreateArc] 错误：三点无法确定有效圆弧");
                 return Arc.Unset;
+            }
 
             return arc;
         }
@@ -293,12 +325,18 @@ namespace Rh.Cmd
         public static Arc CreateArc(Point3d start, Point3d end, Vector3d directionAtStart, bool isPreview = false)
         {
             if (directionAtStart.IsZero || start == end)
+            {
+                RhinoApp.WriteLine("[CreateArc] 错误：方向向量为零或起点与终点重合");
                 return Arc.Unset;
+            }
 
             Arc arc = ArcGeo.CreateFromStartEndDir(start, end, directionAtStart);
 
             if (!arc.IsValid)
+            {
+                RhinoApp.WriteLine("[CreateArc] 错误：起点终点方向无法构造有效圆弧");
                 return Arc.Unset;
+            }
 
             return arc;
         }
@@ -311,7 +349,10 @@ namespace Rh.Cmd
             double tolerance, bool isPreview = false)
         {
             if (curve1 == null || curve2 == null || radius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateArc] 错误：曲线为空或半径 ≤ 0");
                 return new Arc[0];
+            }
 
             double t0 = curve1.Domain.Mid;
             double t1 = curve2.Domain.Mid;
@@ -321,6 +362,7 @@ namespace Rh.Cmd
             if (filletArc.IsValid)
                 return new Arc[] { filletArc };
 
+            RhinoApp.WriteLine("[CreateArc] 错误：未能生成相切圆角弧");
             return new Arc[0];
         }
 
@@ -335,7 +377,10 @@ namespace Rh.Cmd
         public static Line CreateLine(Point3d start, Point3d end, bool isPreview = false)
         {
             if (start == end)
+            {
+                RhinoApp.WriteLine("[CreateLine] 错误：起点与终点重合");
                 return Line.Unset;
+            }
 
             return new Line(start, end);
         }
@@ -347,13 +392,19 @@ namespace Rh.Cmd
         public static Line CreateLine(IEnumerable<Point3d> points, bool isPreview = false)
         {
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreateLine] 错误：点集合为空");
                 return Line.Unset;
+            }
 
             Line line;
             bool success = Line.TryFitLineToPoints(points, out line);
 
             if (!success)
+            {
+                RhinoApp.WriteLine("[CreateLine] 错误：无法将点拟合为直线");
                 return Line.Unset;
+            }
 
             return line;
         }
@@ -369,12 +420,18 @@ namespace Rh.Cmd
         public static Polyline CreatePolyline(IEnumerable<Point3d> points, bool closed = false, bool isPreview = false)
         {
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreatePolyline] 错误：点集合为空");
                 return null;
+            }
 
             var pointList = new List<Point3d>(points);
 
             if (pointList.Count < 2)
+            {
+                RhinoApp.WriteLine("[CreatePolyline] 错误：点数少于 2");
                 return null;
+            }
 
             var poly = new Polyline(pointList);
 
@@ -407,7 +464,10 @@ namespace Rh.Cmd
         public static Polyline CreateRectangle(Plane plane, Point3d center, double width, double height, bool isPreview = false)
         {
             if (width <= 0 || height <= 0)
+            {
+                RhinoApp.WriteLine("[CreateRectangle] 错误：宽度或高度 ≤ 0");
                 return null;
+            }
 
             return RectangleGeo.CreateFromCenter(plane, center, width, height);
         }
@@ -432,7 +492,10 @@ namespace Rh.Cmd
         public static Polyline CreatePolygon(Plane plane, Point3d start, Point3d end, int sides, bool isPreview = false)
         {
             if (sides < 3 || start == end)
+            {
+                RhinoApp.WriteLine("[CreatePolygon] 错误：边数 < 3 或起点与终点重合");
                 return null;
+            }
 
             Point3d center;
             double radius, startAngle;
@@ -463,7 +526,10 @@ namespace Rh.Cmd
             double radius1, double radius2, bool isPreview = false)
         {
             if (radius1 <= 0 || radius2 <= 0)
+            {
+                RhinoApp.WriteLine("[CreateEllipse] 错误：半轴长度 ≤ 0");
                 return null;
+            }
 
             return EllipseGeo.CreateFromCenterRadii(plane, center, radius1, radius2);
         }
@@ -476,7 +542,10 @@ namespace Rh.Cmd
             double secondRadius, bool isPreview = false)
         {
             if (point1 == point2 || secondRadius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateEllipse] 错误：直径两端点重合或第二半径 ≤ 0");
                 return null;
+            }
 
             return EllipseGeo.CreateFromDiameter(plane, point1, point2, secondRadius);
         }
@@ -489,7 +558,10 @@ namespace Rh.Cmd
             Point3d pointOnEllipse, bool isPreview = false)
         {
             if (focus1 == focus2 || !pointOnEllipse.IsValid)
+            {
+                RhinoApp.WriteLine("[CreateEllipse] 错误：两焦点重合或椭圆上点无效");
                 return null;
+            }
 
             return EllipseGeo.CreateFromFoci(focus1, focus2, pointOnEllipse);
         }
@@ -517,7 +589,10 @@ namespace Rh.Cmd
             Point3d endPoint, bool isPreview = false)
         {
             if (focus == vertex)
+            {
+                RhinoApp.WriteLine("[CreateHyperbola] 错误：焦点与顶点重合");
                 return null;
+            }
 
             return ConicGeo.CreateHyperbola(focus, vertex, endPoint);
         }
@@ -531,7 +606,10 @@ namespace Rh.Cmd
             double rho, bool isPreview = false)
         {
             if (rho <= 0 || rho >= 1)
+            {
+                RhinoApp.WriteLine("[CreateConic] 错误：rho 不在 (0, 1) 范围内");
                 return null;
+            }
 
             if (!isPreview)
                 UpdateDefault("CreateConic.rho", rho);
@@ -551,12 +629,18 @@ namespace Rh.Cmd
             bool periodic = false, bool isPreview = false)
         {
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreateNurbsCurve] 错误：点集合为空");
                 return null;
+            }
 
             var pointArray = new List<Point3d>(points).ToArray();
 
             if (pointArray.Length <= degree || degree < 1)
+            {
+                RhinoApp.WriteLine("[CreateNurbsCurve] 错误：控制点数不足或次数 < 1");
                 return null;
+            }
 
             NurbsCurve curve = NurbsCurve.Create(periodic, degree, pointArray);
 
@@ -578,18 +662,27 @@ namespace Rh.Cmd
             IEnumerable<double> weights = null, bool isPreview = false)
         {
             if (points == null || knots == null)
+            {
+                RhinoApp.WriteLine("[CreateNurbsCurve] 错误：点集合或节点向量为空");
                 return null;
+            }
 
             var pointList = new List<Point3d>(points);
             var knotList = new List<double>(knots);
 
             if (pointList.Count < 2 || degree < 1)
+            {
+                RhinoApp.WriteLine("[CreateNurbsCurve] 错误：点数少于 2 或次数 < 1");
                 return null;
+            }
 
             NurbsCurve curve = NurbsCurve.Create(false, degree, pointList.ToArray());
 
             if (curve == null)
+            {
+                RhinoApp.WriteLine("[CreateNurbsCurve] 错误：NURBS 曲线创建失败");
                 return null;
+            }
 
             if (knotList.Count == curve.Knots.Count)
             {
@@ -626,12 +719,18 @@ namespace Rh.Cmd
             bool isPreview = false)
         {
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreateInterpCrv] 错误：点集合为空");
                 return null;
+            }
 
             var pointList = new List<Point3d>(points);
 
             if (pointList.Count < 2)
+            {
+                RhinoApp.WriteLine("[CreateInterpCrv] 错误：点数少于 2");
                 return null;
+            }
 
             if (degree % 2 == 0)
                 degree += 1;
@@ -661,12 +760,18 @@ namespace Rh.Cmd
             bool closed = false, bool isPreview = false)
         {
             if (handlePoints == null)
+            {
+                RhinoApp.WriteLine("[CreateHandleCurve] 错误：控制柄点集合为空");
                 return null;
+            }
 
             var handleList = new List<System.Tuple<Point3d, Point3d>>(handlePoints);
 
             if (handleList.Count < 2)
+            {
+                RhinoApp.WriteLine("[CreateHandleCurve] 错误：控制柄点数少于 2");
                 return null;
+            }
 
             // 每段三次贝塞尔：P0=anchor[i], P1=handle[i], P2=-handle[i+1]+anchor[i+1], P3=anchor[i+1]
             var poly = new PolyCurve();
@@ -710,12 +815,18 @@ namespace Rh.Cmd
             bool isPreview = false)
         {
             if (points == null)
+            {
+                RhinoApp.WriteLine("[CreateCurveThroughPt] 错误：点集合为空");
                 return null;
+            }
 
             var pointList = new List<Point3d>(points);
 
             if (pointList.Count < degree + 1)
+            {
+                RhinoApp.WriteLine("[CreateCurveThroughPt] 错误：点数少于 degree + 1");
                 return null;
+            }
 
             if (tolerance <= 0)
                 tolerance = ActiveTolerance();
@@ -743,7 +854,10 @@ namespace Rh.Cmd
             Vector3d gravity, bool isPreview = false)
         {
             if (start == end || gravity.IsZero)
+            {
+                RhinoApp.WriteLine("[CreateCatenary] 错误：起点与终点重合或重力方向为零");
                 return null;
+            }
 
             return CatenaryGeo.Create(start, end, length, gravity);
         }
@@ -760,7 +874,10 @@ namespace Rh.Cmd
             double turns, double pitch, bool isPreview = false)
         {
             if (turns <= 0 || startRadius <= 0 || endRadius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateHelix] 错误：圈数 ≤ 0 或半径 ≤ 0");
                 return null;
+            }
 
             Point3d axisStart = axis.From;
             Vector3d axisDir = axis.Direction;
@@ -790,7 +907,10 @@ namespace Rh.Cmd
             double turns, bool isPreview = false)
         {
             if (rail == null || turns <= 0 || startRadius <= 0 || endRadius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateHelix] 错误：路径曲线为空、圈数 ≤ 0 或半径 ≤ 0");
                 return null;
+            }
 
             double t0 = rail.Domain.Min;
             double t1 = rail.Domain.Max;
@@ -819,7 +939,10 @@ namespace Rh.Cmd
             double startRadius, double endRadius, double turns, bool isPreview = false)
         {
             if (turns <= 0 || startRadius <= 0 || endRadius <= 0)
+            {
+                RhinoApp.WriteLine("[CreateSpiral] 错误：圈数 ≤ 0 或半径 ≤ 0");
                 return null;
+            }
 
             Point3d radiusPoint = center + plane.XAxis * startRadius;
 
@@ -848,7 +971,10 @@ namespace Rh.Cmd
             var result = new List<Point3d>();
 
             if (curve == null || segmentCount < 1)
+            {
+                RhinoApp.WriteLine("[CreateDividePoints] 错误：曲线为空或段数 < 1");
                 return result;
+            }
 
             Point3d[] points;
             curve.DivideByCount(segmentCount, true, out points);
@@ -873,7 +999,10 @@ namespace Rh.Cmd
             var result = new List<Point3d>();
 
             if (curve == null || segmentLength <= 0)
+            {
+                RhinoApp.WriteLine("[CreateDividePoints] 错误：曲线为空或段长度 ≤ 0");
                 return result;
+            }
 
             Point3d[] points;
             curve.DivideByLength(segmentLength, true, out points);
@@ -920,7 +1049,10 @@ namespace Rh.Cmd
             Vector3d direction, bool isPreview = false)
         {
             if (curves == null || target == null)
+            {
+                RhinoApp.WriteLine("[CreateProjectCrv] 错误：曲线集合或目标曲面为空");
                 return new Curve[0];
+            }
 
             double tolerance = ActiveTolerance();
             var result = new List<Curve>();
@@ -943,7 +1075,10 @@ namespace Rh.Cmd
             double tolerance, bool isPreview = false)
         {
             if (curves == null || target == null || target.Faces.Count == 0)
+            {
+                RhinoApp.WriteLine("[CreatePullCrv] 错误：曲线集合为空、目标曲面为空或无面");
                 return new Curve[0];
+            }
 
             if (tolerance <= 0)
                 tolerance = ActiveTolerance();
@@ -971,7 +1106,10 @@ namespace Rh.Cmd
         public static Curve[] CreateApplyCrv(IEnumerable<Curve> curves, Brep target, bool isPreview = false)
         {
             if (curves == null || target == null || target.Faces.Count == 0)
+            {
+                RhinoApp.WriteLine("[CreateApplyCrv] 错误：曲线集合为空、目标曲面为空或无面");
                 return new Curve[0];
+            }
 
             double tolerance = ActiveTolerance();
             var result = new List<Curve>();
@@ -1003,7 +1141,10 @@ namespace Rh.Cmd
         public static Curve[] CreateDupEdge(Brep brep, IEnumerable<BrepEdge> edges, bool isPreview = false)
         {
             if (brep == null || edges == null)
+            {
+                RhinoApp.WriteLine("[CreateDupEdge] 错误：曲面或边集合为空");
                 return new Curve[0];
+            }
 
             var result = new List<Curve>();
             foreach (BrepEdge edge in edges)
@@ -1019,7 +1160,10 @@ namespace Rh.Cmd
         public static Curve[] CreateDupEdge(Brep brep, bool isPreview = false)
         {
             if (brep == null)
+            {
+                RhinoApp.WriteLine("[CreateDupEdge] 错误：曲面为空");
                 return new Curve[0];
+            }
 
             var result = new List<Curve>();
 
@@ -1043,7 +1187,10 @@ namespace Rh.Cmd
         public static Curve CreateExtractIsocurve(Brep brep, Point3d point, int direction, bool isPreview = false)
         {
             if (brep == null || brep.Faces.Count == 0)
+            {
+                RhinoApp.WriteLine("[CreateExtractIsocurve] 错误：曲面为空或无面");
                 return null;
+            }
 
             BrepFace face = brep.Faces[0];
             double u, v;
@@ -1060,7 +1207,10 @@ namespace Rh.Cmd
             double interval, bool isPreview = false)
         {
             if (geometry == null || interval <= 0)
+            {
+                RhinoApp.WriteLine("[CreateContour] 错误：几何对象为空或间距 ≤ 0");
                 return new Curve[0];
+            }
 
             Brep brep = geometry as Brep;
             if (brep != null)
@@ -1070,6 +1220,7 @@ namespace Rh.Cmd
             if (mesh != null)
                 return Mesh.CreateContourCurves(mesh, startPt, endPt, interval);
 
+            RhinoApp.WriteLine("[CreateContour] 错误：几何对象既非 Brep 也非 Mesh");
             return new Curve[0];
         }
 
@@ -1080,7 +1231,10 @@ namespace Rh.Cmd
         public static Curve[] CreateSection(GeometryBase geometry, Plane cutPlane, bool isPreview = false)
         {
             if (geometry == null)
+            {
+                RhinoApp.WriteLine("[CreateSection] 错误：几何对象为空");
                 return new Curve[0];
+            }
 
             Brep brep = geometry as Brep;
             if (brep != null)
@@ -1094,6 +1248,7 @@ namespace Rh.Cmd
                 return intersectionCurves ?? new Curve[0];
             }
 
+            RhinoApp.WriteLine("[CreateSection] 错误：几何对象非 Brep，无法生成截面");
             return new Curve[0];
         }
     }

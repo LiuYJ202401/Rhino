@@ -396,7 +396,103 @@ Test::
 - 在代码中用局部变量持有，测试步骤结束后自动 GC
 - 在 Overview 中用"临时"前缀标注
 
-## 15. 依赖链总览
+---
+
+## 15. 测试链 1 问题记录与反思
+
+### 15.1 遇到的问题清单
+
+| # | 步骤 | 方法 | 问题表现 | 根因 | 修复方式 |
+|---|------|------|---------|------|---------|
+| 1 | 13 | CreateRectangle | NullReferenceException | 两点在 WorldXY 平面 UV 方向投影重合（X 相同），返回 null | 测试改为传入 YZ 平面，验证多平面支持 |
+| 2 | 35 | CreatePlane | NullReferenceException | `NurbsSurface.CreateFromPlane` 的 pointCount(2) 不满足 `> degree(2)` 约束 | pointCount 由 degree+1 自动推导 |
+| 3 | 38 | CreateCutPlane | NullReferenceException | 步骤35 的 null 被传入 objects 集合，Geometry 层未检查 | Command 层增加 null 元素检查 + 错误输出 |
+| 4 | 57 | CreateBox | 高度为0的退化盒子 | 世界坐标当局部坐标 + `Unitize()` 丢失 normal.Length | 用 `RemapToPlaneSpace` 转局部坐标 + `normal.Length` 作为高度 |
+| 5 | 61 | CreateTruncatedCone | 非实体（IsSolid=false） | Loft 放样接缝不对齐，`CapPlanarHoles` 封盖失败 | 改用 `RevSurface`（旋转曲面） |
+| 6 | 62 | CreatePyramid | 非实体 / NullReferenceException | 手动 `CreateControlPointCurve` + `CreatePlanarBreps` 创建底盖失败 | 改为：拼侧面 → JoinBreps → CapPlanarHoles |
+| 7 | — | CreatePipe/ThickPipe/Slab/Thicken/ExtrudeAlongCrv | 同 #6 | `Append + JoinNakedEdges` 不产生闭合实体 | 全部改为 `JoinBreps` |
+
+### 15.2 问题分类统计
+
+| 类别 | 数量 | 占比 |
+|------|------|------|
+| RhinoCommon API 参数约束不理解 | 1（#2） | 14% |
+| 坐标系语义不理解 | 2（#1, #4） | 29% |
+| 实体构造方式选择错误 | 3（#5, #6, #7） | 43% |
+| null 传播未防护 | 1（#3） | 14% |
+
+### 15.3 反思：为什么会出现这些问题
+
+#### 从代码调用角度
+
+**核心问题：凭"看起来合理"的逻辑拼接 API，而非基于对 RhinoCommon API 行为的深入理解。**
+
+- `CreateFromPlane`：不知道 NURBS 要求 `pointCount > degree`
+- `CreateBox`：不知道 `Box(plane, x, y, z)` 的 Interval 是局部坐标
+- `CreateTruncatedCone`：不知道 Loft 的接缝点对齐问题导致封盖失败
+- `CreatePyramid`：不知道 `Brep.Append` 只追加面不合并拓扑
+
+每个错误都是因为用了一个"看起来能用"的 API，但没有查阅它的实际行为约束。
+
+#### 从框架角度
+
+**问题：Geometry 层没有自我验证机制。**
+
+Geometry 层方法创建几何后直接返回，不检查结果是否有效（`IsValid`/`IsSolid`）。一个 Brep 可能"创建了"但不是实体，一个 Surface 可能"返回了"但参数非法。无效结果被静默传递给上层，直到某处崩溃。
+
+Command 层虽然有 null 检查，但在本次测试之前**完全没有错误输出**——静默返回 null，调用者无法知道哪一步出了问题。
+
+#### 从文档角度
+
+**问题：API 文档只记录"参数是什么"，不记录"参数的隐含约束"。**
+
+| 文档写了什么 | 文档没写什么 |
+|-------------|-------------|
+| `corner1, corner2, normal` | normal 的长度就是高度（不是单纯方向） |
+| `domainU, domainV` | Interval 是平面局部坐标，不是世界坐标 |
+| `degree` | pointCount 必须大于 degree |
+| `返回 null` | 什么条件下返回 null（UV 退化？参数非法？） |
+
+#### 从 SKILL 角度
+
+**问题：SKILL.md 规定了架构分层和命名规范，但没有约束 Geometry 层的实现质量。**
+
+缺失的约束：
+- Geometry 层输出必须验证有效性（`IsSolid`/`IsValid`）
+- 优先使用 RhinoCommon 原生构造体（Cone/Cylinder/RevSurface）
+- `Brep.Append` 不产生实体，必须用 `JoinBreps`
+- `Vector3d` 作为方向+距离时禁止 `Unitize`
+
+### 15.4 优化方案
+
+#### 方案 A：SKILL.md 新增 Geometry 层实现规范
+
+| 编号 | 规则 |
+|------|------|
+| G1 | 优先使用 RhinoCommon 原生构造体（Cone/Cylinder/RevSurface/Sphere），不手动拼接面 |
+| G2 | 封盖统一用 `CapPlanarHoles`，不手动创建底盖曲线 |
+| G3 | 多面体合并用 `Brep.JoinBreps`，不用 `Append + JoinNakedEdges` |
+| G4 | 创建实体后必须检查 `IsSolid`，不满足时返回 null |
+| G5 | `Vector3d` 作为方向+距离参数时，取 Length 前禁止 `Unitize` |
+| G6 | `Box`/`Interval` 在 Plane 上下文中是局部坐标，世界坐标需 `RemapToPlaneSpace` 转换 |
+
+#### 方案 B：Command 层错误输出规范（已实施）
+
+- 所有错误必须在 Rhino 命令行报告，不静默返回 null
+- 格式：`[方法名] 错误：具体原因`
+- Geometry 返回 null 时，Command 层输出消息后返回 null
+
+#### 方案 C：API 文档补充隐含约束
+
+每个方法的文档表格增加一列"约束"，记录参数的隐含要求：
+- normal.Length = 高度
+- Interval = 局部坐标
+- pointCount > degree
+- 两点 UV 投影不能重合
+
+---
+
+## 16. 依赖链总览
 
 ```
 链1:

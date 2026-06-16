@@ -1,4 +1,5 @@
 using System;
+using Rhino;
 using Rhino.Geometry;
 using Rh.Data;
 using Rh.Geo.Trs;
@@ -86,7 +87,10 @@ namespace Rh.Cmd
         public static GeometryBase Move(GeometryBase geometry, Vector3d translation)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Move] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.Move(geometry, translation);
         }
 
@@ -94,7 +98,10 @@ namespace Rh.Cmd
         public static GeometryBase Copy(GeometryBase geometry, Vector3d translation)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Copy] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.Copy(geometry, translation);
         }
 
@@ -102,7 +109,10 @@ namespace Rh.Cmd
         public static GeometryBase Rotate(GeometryBase geometry, double angleRadians, Point3d center, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Rotate] 错误：geometry 为 null 或无效");
                 return null;
+            }
 
             if (!isPreview)
                 UpdateDefault("Rotate.angle", angleRadians);
@@ -114,9 +124,15 @@ namespace Rh.Cmd
         public static GeometryBase Rotate(GeometryBase geometry, double angleRadians, Vector3d axis, Point3d center, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Rotate] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (!axis.IsValid || axis.IsZero)
+            {
+                RhinoApp.WriteLine("[Rotate] 错误：旋转轴无效或为零向量");
                 return null;
+            }
 
             if (!isPreview)
                 UpdateDefault("Rotate.angle", angleRadians);
@@ -128,9 +144,15 @@ namespace Rh.Cmd
         public static GeometryBase Scale(GeometryBase geometry, Point3d anchor, double scaleFactor, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Scale] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (scaleFactor <= 0)
+            {
+                RhinoApp.WriteLine("[Scale] 错误：缩放系数必须大于 0");
                 return null;
+            }
 
             if (!isPreview)
                 UpdateDefault("Scale.factor", scaleFactor);
@@ -142,9 +164,15 @@ namespace Rh.Cmd
         public static GeometryBase Scale(GeometryBase geometry, Plane plane, double xFactor, double yFactor, double zFactor, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Scale] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (xFactor <= 0 || yFactor <= 0 || zFactor <= 0)
+            {
+                RhinoApp.WriteLine("[Scale] 错误：缩放系数必须大于 0");
                 return null;
+            }
 
             if (!isPreview)
             {
@@ -160,7 +188,10 @@ namespace Rh.Cmd
         public static GeometryBase Mirror(GeometryBase geometry, Plane mirrorPlane)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Mirror] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.Mirror(geometry, mirrorPlane);
         }
 
@@ -168,9 +199,15 @@ namespace Rh.Cmd
         public static GeometryBase Mirror(GeometryBase geometry, Point3d pointOnPlane, Vector3d normal)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Mirror] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (!normal.IsValid || normal.IsZero)
+            {
+                RhinoApp.WriteLine("[Mirror] 错误：法线方向无效或为零向量");
                 return null;
+            }
             return TransformGeo.Mirror(geometry, pointOnPlane, normal);
         }
 
@@ -178,7 +215,10 @@ namespace Rh.Cmd
         public static GeometryBase Shear(GeometryBase geometry, Plane plane, Vector3d x, Vector3d y, Vector3d z)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Shear] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.Shear(geometry, plane, x, y, z);
         }
 
@@ -190,9 +230,15 @@ namespace Rh.Cmd
         public static GeometryBase[] ArrayLinear(GeometryBase geometry, Vector3d direction, int count, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayLinear] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (count < 2 || !direction.IsValid || direction.IsZero)
+            {
+                RhinoApp.WriteLine("[ArrayLinear] 错误：数量小于 2 或方向无效");
                 return null;
+            }
 
             if (!isPreview)
                 UpdateDefault("Array.count", count);
@@ -207,9 +253,15 @@ namespace Rh.Cmd
             bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayRectangular] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (xCount < 1 || yCount < 1 || zCount < 1)
+            {
+                RhinoApp.WriteLine("[ArrayRectangular] 错误：各方向数量必须大于 0");
                 return null;
+            }
 
             if (!isPreview)
             {
@@ -229,9 +281,15 @@ namespace Rh.Cmd
             double totalAngleRadians, bool rotate, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayPolar] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (count < 2 || !axis.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayPolar] 错误：数量小于 2 或旋转轴无效");
                 return null;
+            }
 
             if (!isPreview)
             {
@@ -247,9 +305,15 @@ namespace Rh.Cmd
         public static GeometryBase[] ArrayAlongCrv(GeometryBase geometry, Curve rail, int count, bool orient, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayAlongCrv] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (rail == null || !rail.IsValid || count < 2)
+            {
+                RhinoApp.WriteLine("[ArrayAlongCrv] 错误：路径曲线无效或数量小于 2");
                 return null;
+            }
 
             if (!isPreview)
             {
@@ -264,9 +328,15 @@ namespace Rh.Cmd
         public static GeometryBase[] ArrayAlongCrv(GeometryBase geometry, Curve rail, double spacing, bool orient, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayAlongCrv] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (rail == null || !rail.IsValid || spacing <= 0)
+            {
+                RhinoApp.WriteLine("[ArrayAlongCrv] 错误：路径曲线无效或间距小于等于 0");
                 return null;
+            }
 
             if (!isPreview)
             {
@@ -281,11 +351,20 @@ namespace Rh.Cmd
         public static GeometryBase[] ArrayOnSrf(GeometryBase geometry, Brep surface, int uCount, int vCount, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayOnSrf] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (surface == null || !surface.IsValid || surface.Faces.Count == 0)
+            {
+                RhinoApp.WriteLine("[ArrayOnSrf] 错误：曲面无效或无面");
                 return null;
+            }
             if (uCount < 1 || vCount < 1)
+            {
+                RhinoApp.WriteLine("[ArrayOnSrf] 错误：UV 方向数量必须大于 0");
                 return null;
+            }
 
             if (!isPreview)
             {
@@ -304,7 +383,10 @@ namespace Rh.Cmd
         public static GeometryBase Orient(GeometryBase geometry, Plane source, Plane target)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[Orient] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.Orient(geometry, source, target);
         }
 
@@ -312,9 +394,15 @@ namespace Rh.Cmd
         public static GeometryBase OrientOnSrf(GeometryBase geometry, Plane source, Brep surface, Point3d targetPoint)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[OrientOnSrf] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (surface == null || !surface.IsValid || surface.Faces.Count == 0)
+            {
+                RhinoApp.WriteLine("[OrientOnSrf] 错误：曲面无效或无面");
                 return null;
+            }
             return TransformGeo.OrientOnSrf(geometry, source, surface, targetPoint);
         }
 
@@ -322,9 +410,15 @@ namespace Rh.Cmd
         public static GeometryBase OrientOnCrv(GeometryBase geometry, Plane source, Curve rail, double parameter)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[OrientOnCrv] 错误：geometry 为 null 或无效");
                 return null;
+            }
             if (rail == null || !rail.IsValid)
+            {
+                RhinoApp.WriteLine("[OrientOnCrv] 错误：路径曲线为 null 或无效");
                 return null;
+            }
             return TransformGeo.OrientOnCrv(geometry, source, rail, parameter);
         }
 
@@ -332,7 +426,10 @@ namespace Rh.Cmd
         public static GeometryBase RemapCPlane(GeometryBase geometry, Plane oldCPlane, Plane newCPlane)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[RemapCPlane] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.RemapCPlane(geometry, oldCPlane, newCPlane);
         }
 
@@ -344,7 +441,10 @@ namespace Rh.Cmd
         public static GeometryBase ProjectToCPlane(GeometryBase geometry, Plane plane)
         {
             if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ProjectToCPlane] 错误：geometry 为 null 或无效");
                 return null;
+            }
             return TransformGeo.ProjectToCPlane(geometry, plane);
         }
     }
