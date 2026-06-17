@@ -78,7 +78,7 @@
 | 输入 | `Point3d center` — 底面中心，`Vector3d normal` — 方向轴，`double radius` — 半径，`double height` — 高度，`int vertical` — 垂直分段数 [可选]，`int around` — 环向分段数 [可选]，`bool capEnds` — 是否封盖 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格圆柱 |
 | 报错 | radius/height ≤ 0 或分段数 < 3 时输出错误消息并返回 null |
-| RhinoCommon | Geometry 层构造 Cylinder 后调用 `Mesh.CreateFromCylinder(cyl, vertical, around)` |
+| RhinoCommon | Geometry 层构造 Cylinder 后调用 `Mesh.CreateFromCylinder(cyl, vertical, around)`，若 capEnds=true 追加顶/底面扇形封盖 |
 
 ### CreateMeshCone
 
@@ -90,7 +90,7 @@
 | 输入 | `Point3d baseCenter` — 底面中心，`Vector3d normal` — 方向轴，`double bottomRadius` — 底面半径，`double height` — 高度，`int vertical` — 垂直分段数 [可选]，`int around` — 环向分段数 [可选]，`bool capEnd` — 是否封底 [可选]，`bool isPreview = false` |
 | 输出 | `Mesh` — 网格圆锥 |
 | 报错 | radius/height ≤ 0 或分段数 < 3 时输出错误消息并返回 null |
-| RhinoCommon | Geometry 层构造 Cone 后调用 `Mesh.CreateFromCone(cone, vertical, around)` |
+| RhinoCommon | Geometry 层构造 Cone 后调用 `Mesh.CreateFromCone(cone, vertical, around)`，若 capEnd=true 追加底面扇形封盖 |
 
 ### CreateMeshTorus
 
@@ -202,11 +202,11 @@
 
 | 项目 | 说明 |
 |------|------|
-| 功能 | 从点集创建凸包网格 |
-| 输入 | `IEnumerable<Point3d> points` — 点集，`double tolerance` — 公差 [可选，动态值]，`bool isPreview = false` |
-| 输出 | `Mesh` — 凸包网格 |
-| 报错 | 点数不足或共面时输出错误消息并返回 null |
-| RhinoCommon | `Mesh.CreateConvexHull3D(points, out facets, tolerance, angleTolerance)` |
+| 功能 | 从点集创建 3D 凸包网格（增量算法：初始四面体 + 逐点扩展） |
+| 输入 | `IEnumerable<Point3d> points` — 点集（至少 4 个非共面点），`double tolerance` — 公差 [可选，动态值]，`bool isPreview = false` |
+| 输出 | `Mesh` — 凸包网格（含顶点 + 三角面） |
+| 报错 | 去重后点数 < 4、找不到非共面四面体时返回 null |
+| RhinoCommon | Geometry 层自实现增量凸包算法（RhinoCommon 无内置 3D mesh 凸包 API） |
 
 ### CreateMeshFromTessellation
 

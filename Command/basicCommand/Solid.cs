@@ -295,12 +295,23 @@ namespace Rh.Cmd
 
         public static Brep CreateLoftSolid(IEnumerable<Curve> curves, int loftType, bool capEnds, bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var curveList = new List<Curve>(curves);
+            for (int i = 0; i < curveList.Count; i++)
+            {
+                if (curveList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateLoftSolid] 错误：曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             if (!isPreview)
             {
                 UpdateDefault("CreateLoftSolid.loftType", loftType);
                 UpdateDefault("capEnds", capEnds);
             }
-            var brep = SolidGeo.CreateLoftSolid(curves, loftType, capEnds, ActiveTolerance());
+            var brep = SolidGeo.CreateLoftSolid(curveList, loftType, capEnds, ActiveTolerance());
             if (brep == null || !brep.IsSolid)
             {
                 RhinoApp.WriteLine("[CreateLoftSolid] 错误：Geometry 层返回 null 或非实体");
@@ -410,6 +421,15 @@ namespace Rh.Cmd
 
         public static Brep CreateSolidFromBreps(IEnumerable<Brep> breps, bool isPreview = false)
         {
+            foreach (var brep in breps)
+            {
+                if (brep == null)
+                {
+                    RhinoApp.WriteLine("[CreateSolidFromBreps] 错误：集合中包含 null 元素");
+                    return null;
+                }
+            }
+
             var result = SolidGeo.CreateSolidFromBreps(breps, ActiveTolerance());
             if (result == null || !result.IsSolid)
             {

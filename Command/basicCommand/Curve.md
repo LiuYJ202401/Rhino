@@ -227,7 +227,11 @@ RhinoCommon 提供 `Rhino.Geometry.Circle` 结构体的 7 种构造函数，本�
 | 输入 | `Curve curve1` — 第一条曲线，`Curve curve2` — 第二条曲线，`double radius` — 半径，`double tolerance` — 公差 |
 | 输出 | `Circle[]` — 满足条件的圆数组（可能有多个解） |
 | 报错 | 无相切解时输出错误消息并返回空数组 |
-| RhinoCommon | `Curve.CreateFillet(curve1, curve2, radius, t0, t1)` 返回 Arc，由 Arc 构造 Circle |
+| RhinoCommon | 调用 Geometry 层 `FilletGeo.CreateFilletCircles`（详见下方说明） |
+
+> **实现说明（两种场景）**：
+> - **相交线**：调用 `Curve.CreateFillet(curve1, curve2, radius, t0, t1)`，返回与两线相切的圆角圆
+> - **平行线**（`CreateFillet` 不支持的退化情况）：半径被几何约束强制为 `r = d/2`（d 为两线间距），用半圆连接两线。传入的 `radius` 参数在平行线场景下被忽略。
 
 ---
 
@@ -285,7 +289,11 @@ RhinoCommon 提供 `Rhino.Geometry.Circle` 结构体的 7 种构造函数，本�
 | 输入 | `Curve curve1` — 第一条曲线，`Curve curve2` — 第二条曲线，`double radius` — 半径，`double tolerance` — 公差 |
 | 输出 | `Arc[]` — 满足条件的圆弧数组 |
 | 报错 | 无相切解时输出错误消息并返回空数组 |
-| RhinoCommon | `Curve.CreateFillet(curve1, curve2, radius, t0, t1)` |
+| RhinoCommon | 调用 Geometry 层 `FilletGeo.CreateFilletArcs`（详见下方说明） |
+
+> **实现说明（两种场景）**：
+> - **相交线**：调用 `Curve.CreateFillet(curve1, curve2, radius, t0, t1)`
+> - **平行线**（`CreateFillet` 不支持的退化情况）：半径被几何约束强制为 `r = d/2`（d 为两线间距），用半圆连接两线。传入的 `radius` 参数在平行线场景下被忽略。
 
 ---
 
@@ -372,6 +380,12 @@ RhinoCommon 提供 `Rhino.Geometry.Circle` 结构体的 7 种构造函数，本�
 | 输出 | `NurbsCurve` — 圆锥截面曲线 |
 | 报错 | rho ≤ 0 或 ≥ 1，或三点共线时输出错误消息并返回 null |
 | RhinoCommon | 无直接 API，调用 Geometry 层 `ConicGeo.CreateConic`（degree=2 有理 NURBS，w=rho/(1-rho)） |
+
+> **实现约束（NURBS 参数依赖）**：圆锥曲线用二次有理 Bezier 表示，NURBS 参数间存在严格数学依赖：
+> - 独立参数：`order=3`、`pointCount=3`
+> - 推导参数：`degree = order - 1 = 2`，`Knots.Count = pointCount + degree - 1 = 4`
+> - 钳端节点向量：首 degree 个为 0，末 degree 个为 1（即 `[0,0,1,1]`）
+> - Geometry 层实现时**必须动态推导 Knots.Count**，不可硬编码节点索引（否则修改 order 时会越界）
 
 ---
 

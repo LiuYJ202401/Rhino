@@ -21,8 +21,9 @@ namespace Rh.Project.Test
 
         // 基础几何
         private Circle _circle0a;    // 0a：圆
-        private Brep _brep0c;        // 0c：挤出矩形
+        private Brep _brep0c;        // 0c：挤出矩形实体（闭合）
         private Brep _sphere0d;      // 0d：球体
+        private Brep _openBrep0e;    // 0e：开放挤出面（供 DupEdge 测 Naked 边）
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
@@ -36,17 +37,24 @@ namespace Rh.Project.Test
             _circle0a = CurveCmd.CreateCircle(Plane.WorldXY, new Point3d(240,0,0), 6);
             WriteToDoc(_circle0a.ToNurbsCurve(), C, "Base");
 
-            // 0b：矩形 @ (240,15,0) w=10 h=8 → 0c：沿 Z 轴挤出 6
+            // 0b：矩形 @ (240,15,0) w=10 h=8 → 0c：沿 Z 轴挤出为实体（带顶底盖）
             var rect0b = CurveCmd.CreateRectangle(
                 Plane.WorldXY, new Point3d(240,15,0), 10, 8);
-            _brep0c = SurfaceCmd.CreateExtrude(
-                rect0b.ToNurbsCurve(), new Vector3d(0,0,6));
+            _brep0c = SolidCmd.CreateExtrudeSolid(
+                rect0b.ToNurbsCurve(), new Vector3d(0,0,6), true);
             WriteToDoc(_brep0c, C, "Base");
 
             // 0d：球体 @ (240,35,5) r=5
             _sphere0d = SolidCmd.CreateSphere(
                 new Point3d(240,35,5), Vector3d.ZAxis, 5);
             WriteToDoc(_sphere0d, C, "Base");
+
+            // 0e：开放挤出面 @ (240,50,0) w=8 h=6 h=5（无封盖，有 Naked 边）
+            var rect0e = CurveCmd.CreateRectangle(
+                Plane.WorldXY, new Point3d(240,50,0), 8, 6);
+            _openBrep0e = SurfaceCmd.CreateExtrude(
+                rect0e.ToNurbsCurve(), new Vector3d(0,0,5));
+            WriteToDoc(_openBrep0e, C, "Base");
 
             // ================================================================
             // 提取操作（X=260）
@@ -82,9 +90,9 @@ namespace Rh.Project.Test
 
             Step("CurveCmd.CreateProjectCrv", () =>
             {
-                // 临时曲线投影到 0c Brep
+                // 临时曲线在 Brep 顶面上方，沿 -Z 投影到顶面
                 var tempCrv = new LineCurve(
-                    new Point3d(260,30,5), new Point3d(260,30,-1)).ToNurbsCurve();
+                    new Point3d(243,18,9), new Point3d(247,20,9)).ToNurbsCurve();
                 var curves = new Curve[] { tempCrv };
                 var result = CurveCmd.CreateProjectCrv(curves, _brep0c, new Vector3d(0,0,-1));
                 Assert.GreaterThanZero(
@@ -95,9 +103,9 @@ namespace Rh.Project.Test
 
             Step("CurveCmd.CreatePullCrv", () =>
             {
-                // 临时曲线拉回到 0c Brep
+                // 临时曲线在前墙面附近（Y=12），拉回到前墙面（Y=15）
                 var tempCrv = new LineCurve(
-                    new Point3d(260,40,3), new Point3d(270,40,3)).ToNurbsCurve();
+                    new Point3d(243,12,2), new Point3d(247,12,4)).ToNurbsCurve();
                 var curves = new Curve[] { tempCrv };
                 var result = CurveCmd.CreatePullCrv(curves, _brep0c, 0.001);
                 Assert.GreaterThanZero(
@@ -108,9 +116,9 @@ namespace Rh.Project.Test
 
             Step("CurveCmd.CreateApplyCrv", () =>
             {
-                // 临时曲线包裹映射到 0c Brep
+                // 临时曲线在前墙面上（Y=15），包裹映射回曲面
                 var tempCrv = new LineCurve(
-                    new Point3d(260,50,3), new Point3d(270,50,3)).ToNurbsCurve();
+                    new Point3d(243,15,2), new Point3d(247,15,4)).ToNurbsCurve();
                 var curves = new Curve[] { tempCrv };
                 var result = CurveCmd.CreateApplyCrv(curves, _brep0c);
                 Assert.GreaterThanZero(
@@ -121,7 +129,8 @@ namespace Rh.Project.Test
 
             Step("CurveCmd.CreateDupEdge", () =>
             {
-                var result = CurveCmd.CreateDupEdge(_brep0c);
+                // 开放挤出面有 8 条 Naked 边（4 底 + 4 侧棱），测重载2提取全部裸露边
+                var result = CurveCmd.CreateDupEdge(_openBrep0e);
                 Assert.GreaterThanZero(
                     result != null ? result.Length : 0, "CreateDupEdge.Length");
                 if (result != null)

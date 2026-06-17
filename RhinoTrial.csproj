@@ -55,14 +55,12 @@
     </Reference>
   </ItemGroup>
 
-  <!-- 排除 _legacy 文件夹，旧代码仅作参考不参与编译 -->
-  <ItemGroup>
-    <Compile Remove="_legacy\**" />
-  </ItemGroup>
 
-  <!-- Data 目录的 JSON 文件复制到输出目录 -->
+
+  <!-- 运行时资源复制到输出目录（保留目录结构） -->
   <ItemGroup>
     <Content Include="Data\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

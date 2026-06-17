@@ -248,8 +248,19 @@ namespace Rh.Cmd
 
         public static Brep[] CreatePlanarSrf(IEnumerable<Curve> curves, bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var curveList = new List<Curve>(curves);
+            for (int i = 0; i < curveList.Count; i++)
+            {
+                if (curveList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreatePlanarSrf] 错误：曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             double tol = ActiveTolerance();
-            var result = SurfaceGeo.CreatePlanarBreps(curves, tol);
+            var result = SurfaceGeo.CreatePlanarBreps(curveList, tol);
             if (result == null || result.Length == 0)
             {
                 RhinoApp.WriteLine("[CreatePlanarSrf] 错误：Geometry 层返回 null 或空数组");
@@ -272,6 +283,16 @@ namespace Rh.Cmd
             {
                 RhinoApp.WriteLine("[CreateLoft] 错误：放样曲线数量不能少于 2");
                 return null;
+            }
+
+            // 输入校验：检查 null 元素
+            for (int i = 0; i < curveList.Count; i++)
+            {
+                if (curveList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateLoft] 错误：曲线集合中索引 {i} 为 null");
+                    return null;
+                }
             }
 
             Point3d s = start == default(Point3d) ? Point3d.Unset : start;
@@ -314,11 +335,22 @@ namespace Rh.Cmd
             double edgeTolerance = -1, double interiorTolerance = -1, double angleTolerance = -1,
             bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var curveList = new List<Curve>(curves);
+            for (int i = 0; i < curveList.Count; i++)
+            {
+                if (curveList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateNetworkSrf] 错误：曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             double eTol = edgeTolerance < 0 ? ActiveTolerance() : edgeTolerance;
             double iTol = interiorTolerance < 0 ? ActiveTolerance() : interiorTolerance;
             double aTol = angleTolerance < 0 ? ActiveAngleTolerance() : angleTolerance;
 
-            var result = SurfaceGeo.CreateNetworkSurface(curves, continuity, eTol, iTol, aTol);
+            var result = SurfaceGeo.CreateNetworkSurface(curveList, continuity, eTol, iTol, aTol);
             if (result == null)
             {
                 RhinoApp.WriteLine("[CreateNetworkSrf] 错误：Geometry 层返回 null");
@@ -335,11 +367,31 @@ namespace Rh.Cmd
             double edgeTolerance = -1, double interiorTolerance = -1, double angleTolerance = -1,
             bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var uList = new List<Curve>(uCurves);
+            var vList = new List<Curve>(vCurves);
+            for (int i = 0; i < uList.Count; i++)
+            {
+                if (uList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateNetworkSrf] 错误：U 曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+            for (int i = 0; i < vList.Count; i++)
+            {
+                if (vList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateNetworkSrf] 错误：V 曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             double eTol = edgeTolerance < 0 ? ActiveTolerance() : edgeTolerance;
             double iTol = interiorTolerance < 0 ? ActiveTolerance() : interiorTolerance;
             double aTol = angleTolerance < 0 ? ActiveAngleTolerance() : angleTolerance;
 
-            var result = SurfaceGeo.CreateNetworkSurface(uCurves, vCurves, continuity, eTol, iTol, aTol);
+            var result = SurfaceGeo.CreateNetworkSurface(uList, vList, continuity, eTol, iTol, aTol);
             if (result == null)
             {
                 RhinoApp.WriteLine("[CreateNetworkSrf] 错误：Geometry 层返回 null");
@@ -362,8 +414,19 @@ namespace Rh.Cmd
         public static Brep[] CreateSweep(Curve rail, IEnumerable<Curve> shapes,
             bool closed = false, bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var shapeList = new List<Curve>(shapes);
+            for (int i = 0; i < shapeList.Count; i++)
+            {
+                if (shapeList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateSweep] 错误：形状曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             double tol = ActiveTolerance();
-            var result = SurfaceGeo.CreateSweep1(rail, shapes, closed, tol);
+            var result = SurfaceGeo.CreateSweep1(rail, shapeList, closed, tol);
             if (result == null || result.Length == 0)
             {
                 RhinoApp.WriteLine("[CreateSweep] 错误：Geometry 层返回 null 或空数组");
@@ -378,8 +441,19 @@ namespace Rh.Cmd
         public static Brep[] CreateSweep(Curve rail1, Curve rail2, IEnumerable<Curve> shapes,
             bool closed = false, bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var shapeList = new List<Curve>(shapes);
+            for (int i = 0; i < shapeList.Count; i++)
+            {
+                if (shapeList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateSweep] 错误：形状曲线集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             double tol = ActiveTolerance();
-            var result = SurfaceGeo.CreateSweep2(rail1, rail2, shapes, closed, tol);
+            var result = SurfaceGeo.CreateSweep2(rail1, rail2, shapeList, closed, tol);
             if (result == null || result.Length == 0)
             {
                 RhinoApp.WriteLine("[CreateSweep] 错误：Geometry 层返回 null 或空数组");
@@ -546,6 +620,17 @@ namespace Rh.Cmd
         public static Brep CreatePatch(IEnumerable<GeometryBase> geometry,
             int uSpans = 10, int vSpans = 10, bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var geomList = new List<GeometryBase>(geometry);
+            for (int i = 0; i < geomList.Count; i++)
+            {
+                if (geomList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreatePatch] 错误：几何集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             if (!isPreview)
             {
                 UpdateDefault("CreatePatch.uSpans", uSpans);
@@ -553,7 +638,7 @@ namespace Rh.Cmd
             }
 
             double tol = ActiveTolerance();
-            var result = SurfaceGeo.CreatePatch(geometry, uSpans, vSpans, tol);
+            var result = SurfaceGeo.CreatePatch(geomList, uSpans, vSpans, tol);
             if (result == null)
             {
                 RhinoApp.WriteLine("[CreatePatch] 错误：Geometry 层返回 null");
@@ -583,7 +668,7 @@ namespace Rh.Cmd
             {
                 if (objList[i] == null)
                 {
-                    RhinoApp.WriteLine("[CreateCutPlane] 错误：对象集合中包含 null 元素");
+                    RhinoApp.WriteLine($"[CreateCutPlane] 错误：对象集合中索引 {i} 为 null");
                     return null;
                 }
             }
@@ -636,6 +721,17 @@ namespace Rh.Cmd
         public static Brep CreateDrape(IEnumerable<GeometryBase> objects, Plane plane,
             int uSpacing = 10, int vSpacing = 10, bool isPreview = false)
         {
+            // 输入校验：检查 null 元素
+            var objList = new List<GeometryBase>(objects);
+            for (int i = 0; i < objList.Count; i++)
+            {
+                if (objList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateDrape] 错误：对象集合中索引 {i} 为 null");
+                    return null;
+                }
+            }
+
             if (!isPreview)
             {
                 UpdateDefault("CreateDrape.uSpacing", uSpacing);
@@ -643,7 +739,7 @@ namespace Rh.Cmd
             }
 
             double tol = ActiveTolerance();
-            var result = SurfaceGeo.CreateDrape(objects, plane, uSpacing, vSpacing, tol);
+            var result = SurfaceGeo.CreateDrape(objList, plane, uSpacing, vSpacing, tol);
             if (result == null)
             {
                 RhinoApp.WriteLine("[CreateDrape] 错误：Geometry 层返回 null");
@@ -656,6 +752,9 @@ namespace Rh.Cmd
         // CreateHeightfield
         // ------------------------------------------------------------
 
+        /// <summary>
+        /// 重载 1（完全控制）：用户指定所有物理尺寸和采样密度
+        /// </summary>
         public static Brep CreateHeightfield(string imagePath, Plane plane,
             double width, double heightSize, double maxHeight,
             int samplesX = 50, int samplesY = 50, bool isPreview = false)
@@ -667,6 +766,43 @@ namespace Rh.Cmd
             }
 
             var result = SurfaceGeo.CreateHeightfield(imagePath, plane, width, heightSize, maxHeight, samplesX, samplesY);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateHeightfield] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 重载 2（按图片比例自动适配高度）：用户指定宽度和采样密度，高度由图片宽高比推导
+        /// </summary>
+        public static Brep CreateHeightfield(string imagePath, Plane plane,
+            double width, double maxHeight,
+            int samplesX, int samplesY, bool isPreview = false)
+        {
+            if (!isPreview)
+            {
+                UpdateDefault("CreateHeightfield.samplesX", samplesX);
+                UpdateDefault("CreateHeightfield.samplesY", samplesY);
+            }
+
+            var result = SurfaceGeo.CreateHeightfield(imagePath, plane, width, maxHeight, samplesX, samplesY);
+            if (result == null)
+            {
+                RhinoApp.WriteLine("[CreateHeightfield] 错误：Geometry 层返回 null");
+                return null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 重载 3（全自动适配）：用户只需指定物理宽度和最大高度，高度和采样密度都由图片自动推导
+        /// </summary>
+        public static Brep CreateHeightfield(string imagePath, Plane plane,
+            double width, double maxHeight, bool isPreview = false)
+        {
+            var result = SurfaceGeo.CreateHeightfield(imagePath, plane, width, maxHeight);
             if (result == null)
             {
                 RhinoApp.WriteLine("[CreateHeightfield] 错误：Geometry 层返回 null");

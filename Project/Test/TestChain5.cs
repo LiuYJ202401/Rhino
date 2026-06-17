@@ -198,29 +198,37 @@ namespace Rh.Project.Test
 
             Step("MeshCmd.CreateMeshFromPoints", () =>
             {
+                // 非共面点：立方体 8 顶点 + 2 个外部点 = 10 个 3D 点
+                // 凸包应该包裹所有点
                 var pts = new List<Point3d> {
                     new Point3d(575,0,0), new Point3d(579,0,0),
-                    new Point3d(575,4,0), new Point3d(579,4,0)
+                    new Point3d(575,4,0), new Point3d(579,4,0),
+                    new Point3d(575,0,4), new Point3d(579,0,4),
+                    new Point3d(575,4,4), new Point3d(579,4,4),
+                    new Point3d(577,2,6),   // 顶部外部点
+                    new Point3d(577,2,-2)   // 底部外部点
                 };
                 var mesh = MeshCmd.CreateMeshFromPoints(pts, 0.001);
                 Assert.IsValid(mesh, "CreateMeshFromPoints");
+                // 凸包必须有面（不是只有顶点）
+                if (mesh != null)
+                    Assert.GreaterThanZero(mesh.Faces.Count, "CreateMeshFromPoints.Faces");
                 if (mesh != null) WriteToDoc(mesh, C, "MeshFromPts");
             });
 
             Step("MeshCmd.CreateMeshFromTessellation", () =>
             {
+                // 5 个非共线点，无固定边约束 → Delaunay 三角化
                 var pts = new List<Point3d> {
                     new Point3d(575,10,0), new Point3d(579,10,0),
-                    new Point3d(575,14,0), new Point3d(579,14,0)
-                };
-                var edges = new List<IEnumerable<Point3d>> {
-                    new List<Point3d> {
-                        new Point3d(575,10,0), new Point3d(579,10,0)
-                    }
+                    new Point3d(575,14,0), new Point3d(579,14,0),
+                    new Point3d(577,12,0)  // 中心点
                 };
                 var mesh = MeshCmd.CreateMeshFromTessellation(
-                    pts, edges, Plane.WorldXY, false);
+                    pts, null, Plane.WorldXY, false);
                 Assert.IsValid(mesh, "CreateMeshFromTessellation");
+                if (mesh != null)
+                    Assert.GreaterThanZero(mesh.Faces.Count, "CreateMeshFromTessellation.Faces");
                 if (mesh != null) WriteToDoc(mesh, C, "MeshFromPts");
             });
 

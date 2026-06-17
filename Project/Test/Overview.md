@@ -116,11 +116,11 @@ Test::
 | 21 | `CreateCircle(#4)` | `plane=WorldXY, p1=(35,26,0), p2=(35,34,0)`（直径） | (35,30,0) | Curve | — | circle.IsValid |
 | 22 | `CreateCircle(#5)` | `p1=(31,40,0), p2=(35,44,0), p3=(39,40,0)` | (35,40,0) | Curve | — | circle.IsValid |
 | 23 | `CreateCircle(#6)` | `start=(35,48,0), tangent=(1,0,0), end=(35,56,0)` | (35,52,0) | Curve | — | circle.IsValid |
-| 24 | `CreateCircle(#7)` | `curve1=临时线段A, curve2=临时线段B, radius=3, tol=0.001` | (35,62,0) | Curve | — | circles.Length>0 |
+| 24 | `CreateCircle(#7)` | `场景A: L形相交线 r=3; 场景B: 平行线 d=6 r=3(强制d/2)` | (35,60~68,0) | Curve | — | circles.Length>0（两场景均验证） |
 | 25 | `CreateArc(#1)` | `plane=WorldXY, center=(35,72,0), r=4, startAng=0, endAng=π` | (35,72,0) | Curve | — | arc.IsValid |
 | 26 | `CreateArc(#2)` | `start=(31,80,0), onArc=(35,84,0), end=(39,80,0)` | (35,80,0) | Curve | — | arc.IsValid |
 | 27 | `CreateArc(#3)` | `start=(31,90,0), end=(39,90,0), dir=(0,1,0)` | (35,90,0) | Curve | — | arc.IsValid |
-| 28 | `CreateArc(#4)` | `curve1=临时线段C, curve2=临时线段D, radius=3, tol=0.001` | (35,100,0) | Curve | — | arcs.Length>0 |
+| 28 | `CreateArc(#4)` | `场景A: L形相交线 r=3; 场景B: 平行线 d=6 r=3(强制d/2)` | (35,98~106,0) | Curve | — | arcs.Length>0（两场景均验证） |
 | 29 | `CreateEllipse(#1)` | `plane=WorldXY, center=(35,112,0), r1=5, r2=3` | (35,112,0) | Curve | → 步骤46 | crv.IsValid |
 | 30 | `CreateEllipse(#2)` | `plane=WorldXY, p1=(31,122,0), p2=(39,122,0), r2=3` | (35,122,0) | Curve | — | crv.IsValid |
 | 31 | `CreateEllipse(#3)` | `f1=(33,132,0), f2=(37,132,0), pt=(35,135,0)` | (35,132,0) | Curve | — | crv.IsValid |
@@ -128,7 +128,7 @@ Test::
 | 33 | `CreateHyperbola` | `focus=(35,154,0), vertex=(35,156,0), end=(39,158,0)` | (35,156,0) | Curve | — | crv.IsValid |
 | 34 | `CreateConic` | `start=(31,166,0), end=(39,166,0), apex=(35,170,0), rho=0.5` | (35,166,0) | Curve | — | crv.IsValid |
 
-> 步骤24/28 的临时线段不写入文档，仅用于测试相切圆/弧。线段 A=(31,60,0)-(39,60,0)，B=(31,66,0)-(39,66,0)；C=(31,98,0)-(39,98,0)，D=(31,104,0)-(39,104,0)。
+> 步骤24/28 各测试两种相切场景：场景A 为 L 形垂直相交线段（1 个唯一解），场景B 为平行线 + r<d/2（2 个对称解，Rhino Tangent 典型用例）。两场景的临时线段均不写入文档，仅用于测试相切圆/弧。
 
 ### 7.4 Surface 子区（X=60）
 
@@ -159,7 +159,7 @@ Test::
 
 | 步骤 | 方法（重载） | 输入参数 | 中心坐标 | 图层 | 衔接→ | 断言 |
 |------|-------------|---------|---------|------|-------|------|
-| 55 | `CreateExtrudeSolid` | `profile=步骤13 Rectangle副本, dir=(0,0,6), capEnds=true` | (90,0,3) | Solid | — | brep.IsSolid |
+| 55 | `CreateExtrudeSolid` | `profile=YZ平面矩形(82,8,0)-(82,16,6), dir=(6,0,0), capEnds=true` | (85,12,3) | Solid | — | brep.IsSolid |
 | 56 | `CreateBox(#1)` | `box=Box(WorldXY, (90,8,0)-(98,16,6))` | (90,12,3) | Solid | → 链4/5 引用 | brep.IsSolid |
 | 57 | `CreateBox(#2)` | `c1=(90,22,0), c2=(98,30,0), normal=(0,0,1)` | (90,26,3) | Solid | — | brep.IsSolid |
 | 58 | `CreateSphere` | `center=(90,38,4), normal=(0,0,1), radius=4` | (90,38,4) | Solid | → 链4 引用 | brep.IsSolid |
@@ -199,9 +199,12 @@ Test::
 | 14 | `CreatePatch` | `geometry=[临时弧线 + 临时线段 + 步骤1曲线]` | (120,138,0) | Surface | — | brep.IsValid |
 | 15 | `CreateDevLoft` | `rail1=临时曲线A(120,148,0)-(132,148,4), rail2=临时曲线B(120,152,0)-(132,152,4)` | (120,150,0) | Surface | — | brep.IsValid |
 | 16 | `CreateDrape` | `objects=[临时Brep@ (120,160,0)], plane=WorldXY, uSpacing=10, vSpacing=10` | (120,160,0) | Surface | — | brep.IsValid |
-| 17 | `CreateHeightfield` | `imagePath="test_heightfield.png", plane=WorldXY@(120,172,0), w=10, h=8, maxH=4, samplesX=20, samplesY=16` | (120,172,0) | Surface | — | brep.IsValid |
+| 17a | `CreateHeightfield(#1 完全控制)` | `imagePath, plane=WorldXY@(120,172,0), w=10, h=8, maxH=4, samplesX=20, samplesY=16` | (120,172,0) | Surface | — | brep.IsValid |
+| 17b | `CreateHeightfield(#2 按比例)` | `imagePath, plane=WorldXY@(140,172,0), w=10, maxH=4, samplesX=20, samplesY=16` | (140,172,0) | Surface | — | brep.IsValid（heightSize 由图片比例推导） |
+| 17c | `CreateHeightfield(#3 全自动)` | `imagePath, plane=WorldXY@(160,172,0), w=10, maxH=4` | (160,172,0) | Surface | — | brep.IsValid（heightSize 和 samples 都自动推导，上限 50） |
 
-> 步骤17 需要一个测试图像文件。若文件不存在，此步骤标记为 SKIP。
+> 步骤17 需要一个测试图像文件（位于 `Assets/Test/test_heightfield.png`）。若文件不存在，此步骤标记为 SKIP。
+> 按测试覆盖原则，3 个重载各有独立测试步骤（17a/17b/17c）。
 
 ---
 
@@ -267,7 +270,8 @@ Test::
 
 | 步骤 | 方法（重载） | 输入参数 | 中心区域 | 图层 | 断言 |
 |------|-------------|---------|---------|------|------|
-| 10 | `ArrayLinear` | `geo=小Box(420,0,0), dir=(0,1,0), count=4` | Y=0~36 | Transform | arr.Length==4 |
+| 10a | `ArrayLinear(#1 按间距)` | `geo=小Box, dir=(0,4,0), count=4` | Y=0,4,8,12 | Transform | arr.Length==4 |
+| 10b | `ArrayLinear(#2 按总跨度)` | `geo=小Box, from=(420,16,0), to=(420,40,0), count=4` | Y=16,24,32,40 | Transform | arr.Length==4 |
 | 11 | `ArrayRectangular` | `geo=小Box(420,48,0), plane=WorldXY, xC=3, yC=2, zC=1, xS=8, yS=8, zS=0` | (420,48~56,0) | Transform | arr.Length==6 |
 | 12 | `ArrayPolar` | `geo=小Box(420,72,0), axis=Line((420,80,0)-(420,80,10)), count=6, ang=2π, rotate=true` | (420,72~88,0) | Transform | arr.Length==6 |
 | 13 | `ArrayAlongCrv(#1)` | `geo=小Sphere(420,100,0) r=1, rail=步骤0c Line副本, count=4, orient=true` | (420,100,0) | Transform | arr.Length==4 |
@@ -327,8 +331,8 @@ Test::
 
 | 步骤 | 方法（重载） | 输入参数 | 中心坐标 | 图层 | 断言 |
 |------|-------------|---------|---------|------|------|
-| 15 | `CreateMeshFromPoints` | `pts=[(575,0,0),(579,0,0),(575,4,0),(579,4,0)], tol=0.001` | (575,2,0) | Mesh | mesh.IsValid |
-| 16 | `CreateMeshFromTessellation` | `pts=[(575,10,0),(579,10,0),(575,14,0),(579,14,0)], edges=[[(575,10,0),(579,10,0)]], plane=WorldXY, allowNew=false` | (575,12,0) | Mesh | mesh.IsValid |
+| 15 | `CreateMeshFromPoints` | `pts=立方体8顶点+顶/底外部点=10个非共面点, tol=0.001` | (577,2,2) | Mesh | mesh.IsValid + Faces.Count > 0 |
+| 16 | `CreateMeshFromTessellation` | `pts=5个点(含中心点), edges=null, plane=WorldXY, allowNew=false` | (577,12,0) | Mesh | mesh.IsValid + Faces.Count > 0 |
 | 17 | `CreateMeshPatch` | `pts=[(575,20,0),(579,20,0),(575,24,0),(579,24,0)], tol=0.001` | (575,22,0) | Mesh | mesh.IsValid |
 
 ### 11.5 重网格化（X=600）
@@ -492,7 +496,86 @@ Command 层虽然有 null 检查，但在本次测试之前**完全没有错误�
 
 ---
 
-## 16. 依赖链总览
+## 16. 测试链 2 预检查与维护记录
+
+### 16.1 检查范围
+
+基于测试链 1 的经验教训（第 15 节），对 TestChain2 涉及的所有 Command 层和 Geometry 层方法进行预检查，防止同类问题再次出现。
+
+### 16.2 检查项与结果
+
+| 检查项 | 范围 | 发现 | 修复 |
+|--------|------|------|------|
+| 几何集合 null 元素检查 | Surface.cs 所有接收 `IEnumerable<Curve>`/`IEnumerable<GeometryBase>` 的方法（8个） | CreateNetworkSrf(#1)/CreateNetworkSrf(#2)/CreatePatch/CreateDrape/CreatePlanarSrf/CreateSweep(单轨)/CreateSweep(双轨)/CreateCutPlane 均缺少 null 元素检查 | ✅ 全部增加 null 元素检查 |
+| 几何集合 null 元素检查 | Solid.cs（3个）+ Mesh.cs（1个）+ Curve.cs（4个） | CreateSweepSolid/CreateSolidFromBreps/CreateMeshPatch/CreateProjectCrv/CreatePullCrv/CreateDupEdge 缺少 null 元素检查（CreateLoftSolid/CreateApplyCrv 已有） | ✅ 6 个方法增加检查 |
+| NURBS 参数约束 | CreateNurbsCurve(#1): 5点 degree=3 → 5>3 ✅; CreateNurbsCurve(#2): 3点 degree=2 → 3>=2 ✅ | 无问题 | — |
+| 坐标系语义 | TestChain2 所有方法均使用 WorldXY/显式构造的 Plane，无坐标系混淆 | 无问题 | — |
+| 实体构造方式 | TestChain2 涉及的曲面方法（CreateSrfThroughPts/CreateSrfControlPts/CreateNetworkSrf/CreatePatch/CreateDevLoft/CreateDrape）均为曲面（Brep），不要求 IsSolid | 无问题 | — |
+| 参数校验完整性 | CreateCatenary（length>distance ✅）、CreateHelix（turns>0, radius>0 ✅）、CreateSpiral（turns>0, radius>0 ✅） | 无问题 | — |
+| 依赖传播保护 | 步骤12/13/14 依赖步骤1/3 的结果；步骤16 依赖 CreatePlane 结果 | 如果上游失败，null 会被传入集合 → 已被 null 元素检查拦截 | ✅ |
+
+### 16.3 TestChain2 测试代码本身
+
+| 步骤 | 方法 | 参数检查 | 结论 |
+|------|------|---------|------|
+| 1 | CreateNurbsCurve(#1) | 5点 degree=3, 满足 pointCount>degree | ✅ |
+| 2 | CreateNurbsCurve(#2) | 3点 degree=2, 6节点 3权重, 数量匹配 | ✅ |
+| 3 | CreateInterpCrv | 4点 degree=3 | ✅ |
+| 4 | CreateHandleCurve | 2组手柄点 | ✅ |
+| 5 | CreateCurveThroughPt | 4点 degree=3 | ✅ |
+| 6 | CreateCatenary | 距离12 < length16, gravity非零 | ✅ |
+| 7 | CreateHelix(#1) | turns=4>0, radius=2>0 | ✅ |
+| 8 | CreateHelix(#2) | turns=2>0, radius=1,2>0 | ✅ |
+| 9 | CreateSpiral | turns=3>0, radius=1,5>0 | ✅ |
+| 10 | CreateSrfThroughPts | 4x4点, degree=3, 满足 count>degree | ✅ |
+| 11 | CreateSrfControlPts | 同上 | ✅ |
+| 12 | CreateNetworkSrf(#1) | 4条曲线，可能不构成有效网络（曲线不相交） | ⚠️ 可能返回 null，但会被正确报告 |
+| 13 | CreateNetworkSrf(#2) | U/V 曲线各2条 | ✅ |
+| 14 | CreatePatch | 弧+线+NurbsCurve | ✅ |
+| 15 | CreateDevLoft | 2条轨道曲线 | ✅ |
+| 16 | CreateDrape | 先创建 Plane 再垂幕 | ✅ |
+| 17 | CreateHeightfield | 文件不存在时跳过 | ✅ |
+
+### 16.4 结论
+
+TestChain2 测试代码本身参数合理，无坐标系错误或 NURBS 约束违反。主要风险来自**依赖传播**（上游步骤失败导致 null 传入集合），已通过全面增加 null 元素检查解决。
+
+**与 TestChain1 的对比**：
+- TestChain1 的问题集中在 Geometry 层实现（实体构造方式、坐标系转换、NURBS 约束）
+- TestChain2 的关注点转移到 Command 层防护（几何集合的 null 元素检查）
+- 两者共同验证了 SKILL.md G1-G6 规范和 Command 层错误输出规范的必要性
+
+### 16.5 深度检查发现的问题
+
+在完成 null 检查防护后，对 TestChain2 涉及的 Geometry 层实现进行深度审查，发现 3 个问题：
+
+| # | 类型 | 文件 | 问题 | 影响 | 修复 |
+|---|------|------|------|------|------|
+| 1 | **代码 bug** | CatenaryGeo.cs | 悬链线牛顿迭代用了**空间距离**而非**水平距离**。公式 `length=2a·sinh(d/2a)` 中的 d 是水平距离 | 两点在重力方向有高差时，参数 a 和下垂量计算错误 | 改用 `horizontalDist`；增加 `horizontalDist≈0` 时的返回 null 保护 |
+| 2 | **测试输入** | TestChain2 步骤16 | CreateDrape 用平面 Brep(Z=0) 作为垂幕对象，射线从 Z=0 向下射，与物体共面无法命中 | Drape 结果退化为平坦曲面，失去垂幕意义 | 改用 Box(高4) + 投影平面设在 Z=6 |
+| 3 | **测试输入** | TestChain2 步骤12 | CreateNetworkSrf(#1) 的 4 条曲线不构成有效网络（对角线+三条不交叉的直线） | RhinoCommon 返回 null（error≠0） | 重建为 2 条平行 U 曲线 + 2 条 V 连接曲线 |
+
+#### 问题 1 详解：CatenaryGeo 水平距离 vs 空间距离
+
+悬链线是只在重力作用下悬挂的链条形状。数学上：
+```
+length = 2a · sinh(d / 2a)
+```
+其中 `d` 是两悬挂点的**水平距离**，不是空间直线距离。
+
+旧代码计算了 `horizontalDist` 但没有使用它，而是用了 `pointDist`（空间距离）。当两点在同一水平面时两者相等（TestChain2 步骤6 的情况），bug 不触发。但只要两点有高差，计算结果就是错的。
+
+#### 问题 2 详解：CreateDrape 射线与物体共面
+
+`CreateDrape` 的工作原理是从投影平面上发射射线（方向 = -plane.Normal），通过 `RayShoot` 求与物体的交点。如果射线起点和物体在同一平面上，`RayShoot` 可能无法检测到交点（射线从物体内/表面出发）。
+
+#### 问题 3 详解：网络曲面拓扑要求
+
+`NurbsSurface.CreateNetworkSurface` 要求所有曲线相互交叉构成闭合网格。旧测试的 4 条曲线中，`_nurbsCurve1`（对角线）只与 `vCrv1`（底边）在起点相交，其余位置无交叉，不满足网络拓扑要求。
+
+---
+
+## 17. 依赖链总览
 
 ```
 链1:
@@ -531,3 +614,254 @@ Command 层虽然有 null 检查，但在本次测试之前**完全没有错误�
   步骤0d Loft → 步骤5
   步骤0e Extrude → 步骤6
 ```
+
+---
+
+## 17. 测试链 3 预检查与修复
+
+### 17.1 检查依据
+
+基于测试链 1 和 2 的经验：
+- **空间位置不匹配**（TestChain2 Patch 跨越 Y=0~120 的教训）：操作目标与输入几何的空间范围必须重叠
+- **开放 vs 闭合几何体**（TestChain1 实体构造的教训）：投影/拉回等操作需要闭合实体才有足够的面来接收投影
+
+### 17.2 发现的问题
+
+| # | 类型 | 步骤 | 问题 | 影响 | 修复 |
+|---|------|------|------|------|------|
+| 1 | **基础几何** | 0c | CreateExtrude 产生开放管（无顶底盖），投影沿 -Z 穿过开放顶部无命中 | 步骤5 投影返回空 | 改用 CreateExtrudeSolid(capEnds=true) 产生带顶底盖的实体 |
+| 2 | **空间不匹配** | 5 | 临时曲线在 (260,30) 投影不到 Brep(240~250, 15~23) | 投影返回空 | 移至 (243,18,9)→(247,20,9)，在 Brep 顶面上方 |
+| 3 | **空间不匹配** | 6 | 临时曲线在 (260~270,40) 离 Brep 太远 | 拉回返回空 | 移至 (243,12,2)→(247,12,4)，在前墙附近 |
+| 4 | **空间不匹配** | 7 | 临时曲线在 (260~270,50) 离 Brep 太远 | Pullback 失败 | 移至 (243,15,2)→(247,15,4)，在前墙面上 |
+
+### 17.3 检查通过项
+
+| 步骤 | 方法 | 检查结果 |
+|------|------|---------|
+| 1-2 | CreateDividePoints | 直接操作圆曲线，无空间依赖 |
+| 3-4 | GetCurveStart/End | 直接操作圆曲线，无空间依赖 |
+| 8 | CreateDupEdge | 直接操作 Brep 边缘，无空间依赖 |
+| 9 | CreateExtractIsocurve | 点 (240,15,3) 在 Brep 面上 |
+| 10 | CreateContour | 等高线平面无限延伸，球体 Z=0~10 全部覆盖 |
+| 11 | CreateSection | 截面平面 Z=3 无限延伸，与球体 Z=0~10 相交 |
+
+### 17.4 经验总结
+
+**核心教训：提取/派生操作的输入几何必须与操作目标在空间上重叠。**
+
+这是 TestChain2 "Patch 跨越 Y=0~120" 问题的同类变体——临时输入几何的空间位置与操作目标不匹配。区别在于：
+- TestChain2：混用了远距离的两个已有几何（_nurbsCurve1 和临时曲线）
+- TestChain3：临时曲线完全在目标 Brep 的空间范围之外
+
+**防范规则**：编写涉及投影/拉回/包裹操作的测试时，必须先确认目标几何的空间范围（BoundingBox），再在此范围内或附近放置临时输入几何。
+
+### 17.5 独立深度检查（第二轮）
+
+对修复后的 TestChain3 再次逐步骤审查，发现 1 个遗漏问题：
+
+| # | 步骤 | 方法 | 问题 | 影响 | 修复 |
+|---|------|------|------|------|------|
+| 5 | 8 | CreateDupEdge(#2) | `_brep0c` 是 capEnds=true 的闭合实体，所有边都是 Interior（两面共享），无 Naked 边。DupEdge 重载2 只提取 `EdgeAdjacency.Naked` 的边，返回空数组 | Assert.GreaterThanZero 失败 | 新增开放 Brep 基础几何 0e（CreateExtrude 无封盖），用其作为 DupEdge 重载2 的输入 |
+
+#### 问题详解：闭合实体的边缘拓扑
+
+挤出实体加封盖后（capEnds=true）是拓扑闭合的 Brep：
+- 6 个面：4 侧面 + 1 顶面 + 1 底面
+- 12 条边：每条边都被恰好两个面共享
+- 所有边的 `Valence == EdgeAdjacency.Interior`（非 Naked）
+
+DupEdge 重载2 的语义是"提取全部裸露边"（对应 Rhino 的 `DupEdge` 命令选中所有 Naked 边）。对闭合实体而言，裸露边数为 0 是正确的拓扑行为。
+
+#### 修复方式：新增开放 Brep 基础几何
+
+**原则**：测试的目的是检验 Command/Geometry 层的有效性，不能为了通过 Assert 而改变测试目标（如从测重载2改为测重载1）。
+
+正确做法是**选择合适的测试输入**：新增 0e 基础几何（`CreateExtrude` 无封盖的开放挤出面），它天然有 8 条 Naked 边（4 底边 + 4 侧棱），专门用于测试 DupEdge 重载2 的"提取全部裸露边"功能。
+
+| 基础几何 | 类型 | 空间范围 | Naked 边数 | 用途 |
+|---------|------|---------|-----------|------|
+| 0c | 闭合实体（capEnds=true） | X=240~250, Y=15~23, Z=0~6 | 0 | 步骤5-7（投影/拉回/包裹需要闭合面） |
+| 0e | 开放挤出面（无封盖） | X=240~248, Y=50~56, Z=0~5 | 8 | 步骤8（DupEdge 重载2 需要 Naked 边） |
+
+#### 其他步骤检查结果（全部通过）
+
+| 步骤 | 检查点 | 结果 |
+|------|--------|------|
+| 1-4 | 直接操作圆曲线 | ✅ 无空间依赖 |
+| 5 | 临时曲线(243~247,18~20,Z=9) 在 Brep 顶面(Z=6)上方，-Z 投影命中 | ✅ |
+| 6 | 临时曲线(243~247,Y=12,Z=2~4) 距前墙(Y=15) 3 单位，拉回命中 | ✅ |
+| 7 | 临时曲线(243~247,Y=15,Z=2~4) 在前墙面上，Pullback+Pushup | ✅ |
+| 9 | 点(240,15,3) 在 Brep 上，等参线提取 | ✅ |
+| 10 | 等高线 Z=0~10 间距2，球体 Z=0~10 全覆盖 | ✅ |
+| 11 | 截面 Z=3 无限平面，球体 Z=0~10 相交 | ✅ |
+
+---
+
+## 18. 测试链 1 运行时问题记录（第一轮实机执行）
+
+### 18.1 背景
+
+第 15 节记录了 7 个通过**代码审查**发现的问题。修复后编译通过，但实际在 Rhino 中执行 `RhTestChain1` 后，仍有 7 个步骤 FAIL。
+
+> 用户反馈："回顾第一个测试，我发现测试其实没通过，只是没报错而已。"
+
+这说明**静态代码审查无法替代运行时测试**：API 参数约束、返回值语义、几何拓扑要求等问题，只有在实际调用时才会暴露。
+
+### 18.2 运行时发现的问题清单
+
+| # | 步骤 | 方法 | 问题表现 | 根因 | 修复方式 |
+|---|------|------|---------|------|---------|
+| 1 | 8 | RemovePointsFromCloud | 期望 4 项, 实际 2 项 | 步骤7 `AddPointsToCloud` 返回新 PointCloud，测试代码**未赋值回 cloud5**，导致数据链断裂。步骤8 的 cloud5 仍是原始 4 点 | **正确串联数据流**：步骤7/8/9 均用 `cloud5 = ...` 接收返回值，恢复期望值 6→4→3 |
+| 2 | 24 | CreateCircle(#7) | 未能生成相切圆角圆 | 两条**平行**线段间距=6，半径=3（恰为间距一半），`Curve.CreateFillet` 在相切极限条件下无法生成圆角 | 改为**垂直相交**的 L 形线段，交点处可生成相切圆 |
+| 3 | 28 | CreateArc(#4) | 未能生成相切圆角弧 | 同 #2，平行线段 + 半径=间距/2 的相切极限 | 同 #2，改为垂直相交线段 |
+| 4 | 33 | CreateHyperbola | Index must be less than the number of knots | `NurbsCurve(3, true, 3, 3)` 第 3 参数是 order=3→degree=2，Knots.Count=4，代码却设了 6 个节点（索引 0~5 越界） | 节点改为 4 个：[0,0,1,1] |
+| 5 | 34 | CreateConic | 同 #4 | ConicGeo.CreateConic 内部同样的 Knots 越界 | 同 #4 |
+| 6 | 41 | CreateEdgeSrf | Geometry 层返回 null | `_poly12`（YZ 平面闭合多边形）和 `_rect14`（XY 平面矩形）端点不相接，违反文档"边缘曲线需端点相接"约束 | 改为局部 4 条端点相接的矩形边界 |
+| 7 | 55 | CreateExtrudeSolid | 返回 null 或非实体（Faces=1, Edges=3） | 两层问题：(a) 代码层 `CapPlanarHoles` 返回值被丢弃（已修复）；(b) 测试数据层 `_rect13`（YZ 平面）挤出方向 `(0,0,6)` 在轮廓平面内，导致 2 条边与挤出方向平行、侧面退化为零面积，Brep 只有 1 面 3 边无法封盖。**根因是文档不清楚**——未警告方向退化约束 | (a) 接住返回值；(b) Geometry 层增加方向退化检测（`TryGetPlane` + 点积检查）；(c) 测试改用 YZ 平面 + X 方向挤出 |
+
+### 18.3 问题分类统计
+
+| 类别 | 数量 | 问题编号 | 占比 |
+|------|------|---------|------|
+| RhinoCommon API 返回值语义（返回新对象 vs 修改原对象） | 3 | #1, #6（间接）, #7 | 43% |
+| NURBS 数学约束（Knots.Count 公式） | 2 | #4, #5 | 29% |
+| RhinoCommon API 行为约束（CreateFillet 相切条件） | 2 | #2, #3 | 29% |
+
+### 18.4 与第 15 节（设计时问题）的对比
+
+| 维度 | 第 15 节（设计时/代码审查） | 第 18 节（运行时/实机执行） |
+|------|--------------------------|--------------------------|
+| 发现方式 | 代码审查、API 文档查阅 | Rhino 中执行 `RhTestChain1` |
+| 问题数 | 7 | 7 |
+| 主要类型 | 坐标系语义（29%）、实体构造方式（43%） | 返回值语义（43%）、NURBS 约束（29%）、API 行为约束（29%） |
+| 共同点 | 均源于"对 RhinoCommon API 行为缺乏深入理解" |
+
+**关键发现**：两轮检查的 14 个问题**无一重复**——代码审查能发现架构层面的问题（坐标系、实体构造策略），但无法发现运行时才暴露的问题（返回值语义、节点向量越界、相切极限条件）。
+
+### 18.5 新增经验教训
+
+#### 教训 1：RhinoCommon API 的"返回新对象"模式
+
+以下 API 返回**新对象**，不修改原对象，调用者必须接收返回值：
+
+| API | 错误用法 | 正确用法 |
+|-----|---------|---------|
+| `Brep.CapPlanarHoles(tol)` | `brep.CapPlanarHoles(tol);` | `brep = brep.CapPlanarHoles(tol);` |
+| `PointCmd.AddPointsToCloud` | `AddPointsToCloud(cloud, pts);` | `cloud = AddPointsToCloud(cloud, pts);` |
+| `PointCmd.RemovePointsFromCloud` | `RemovePointsFromCloud(cloud, idx);` | `cloud = RemovePointsFromCloud(cloud, idx);` |
+
+> 已在 Solid.md 和 Point.md 中补充"关键约束：返回值语义"小节。
+> 已提取为 SKILL.md G6 的补充：API 返回值语义必须在文档中明确标注。
+
+#### 教训 2：NurbsCurve 构造函数参数的真实含义
+
+```csharp
+new NurbsCurve(dimension, rational, order, pointCount)
+//                                          ↑      ↑
+//                                       order   控制 Points.Count
+//                                       degree = order - 1
+//                                       Knots.Count = pointCount + degree - 1
+```
+
+| 参数 | 含义 | 常见误解 |
+|------|------|---------|
+| 第 3 参数 | **order**（阶数） | 误认为是 degree（次数） |
+| Knots.Count | `cvCount + degree - 1` | 误认为与 order 无关 |
+
+实例：`NurbsCurve(3, true, 3, 3)` → order=3, degree=2, Knots.Count=3+2-1=**4**（非 6）
+
+#### 教训 2 补充：NURBS 参数的输入冗余性
+
+**核心洞察**：NURBS 构造函数的 4 个参数中，只有 2 个是真正独立的，其余由数学公式严格推导：
+
+```
+独立输入         推导关系
+────────         ────────
+order    ──┐
+            ├─→ degree = order - 1
+            │
+pointCount ─┤
+            └─→ Knots.Count = pointCount + degree - 1
+                Knots 具体值 = 钳端格式由 degree 决定
+```
+
+**Bug 的真正根源**：旧代码的错误不是数学公式记错，而是**违反了依赖关系**——构造函数已经锁定了 `order=3, pointCount=3`（隐含 Knots.Count=4），但代码却"独立地"写了 6 个节点赋值，两套数字不一致。
+
+**根治方案（已实施）**：Geometry 层实现只维护 2 个独立参数（`order`、`pointCount`），degree/knotCount/knots 值全部由公式推导：
+
+```csharp
+const int order = 3;
+const int pointCount = 3;
+int degree = order - 1;
+int knotCount = pointCount + degree - 1;
+for (int i = 0; i < knotCount; i++)
+    nc.Knots[i] = (i < degree) ? 0.0 : 1.0;
+```
+
+这样修改 order 时，所有派生值自动同步，消除了"推导值"与"独立写入"之间不一致的可能。
+
+#### 教训 3：Curve.CreateFillet 的相切极限与平行线增强
+
+`Curve.CreateFillet(c1, c2, radius, tol)` 要求两条曲线在半径为 `radius` 的圆与两者相切时，圆心位置唯一且有限。
+
+**平行线的几何约束（关键数学推导）**：
+
+对于两条平行线（间距 d），相切圆的圆心在两线之间，到两线距离之和 = d：
+
+```
+r + r = d  →  r = d/2 （唯一解）
+```
+
+- **r < d/2**：圆太小，无法同时接触两线（**不存在相切圆**）
+- **r = d/2**：圆恰好填满，圆心可沿线方向任意滑动（**无穷多解** → CreateFillet 返回 null）
+- **r > d/2**：圆太大，无法放入两线之间（**不存在相切圆**）
+
+**结论**：平行线场景**在数学上无法通过 `Curve.CreateFillet` 实现**。这不是 API 限制，而是几何约束。Rhino 的 Fillet 命令处理平行线时用半圆（r=d/2），但底层 `CreateFillet` 不支持这种退化情况。
+
+**解决方案（已实施）：在 Geometry 层增加平行线半圆分支**
+
+新建 [FilletGeo.cs](file:///d:/Data/Project/Rhino_Workspace/Rhino/Geometry/Curve/FilletGeo.cs)，封装两种场景：
+- **相交线**：走 `Curve.CreateFillet` 正常路径
+- **平行线**：检测平行后，强制使用 `r = d/2`，在两线重叠区间中点构造半圆
+
+Command 层 `CreateCircle(#7)` / `CreateArc(#4)` 改为调用 `FilletGeo.CreateFilletCircles` / `CreateFilletArcs`，对调用者透明地支持两种场景。
+
+> **教训记录**：
+> 1. 最初我错误地认为"平行线 d=6, r=2, 满足 2r<d 有两个对称解"。这是数学错误——**平行线相切圆的半径被严格锁定为 d/2**。经运行时测试验证后纠正。
+> 2. 纠正后，进一步在 Geometry 层实现了平行线半圆分支，使封装 API 完全覆盖 Rhino Fillet 命令的能力（包括平行线退化情况）。
+
+#### 教训 4：数据链测试必须真正串联
+
+步骤 5→7→8→9 设计为一条点云数据链（4→6→4→3），但旧测试代码**没有把每步的返回值赋值回 `cloud5`**，导致链条断裂——每步实际操作的都是原始的 4 点 cloud5。
+
+**错误修复（掩盖问题）**：把 Assert 期望值对齐到断裂后的实际值（4→2→3）。
+**正确修复（根治）**：用 `cloud5 = ...` 接收返回值，让链条真正串联，恢复原始期望值（6→4→3）。
+
+编写数据链测试时，每一步必须**显式传递状态**，不能假设上游操作会修改共享变量。
+
+#### 教训 5：挤出方向必须与轮廓平面有法向分量
+
+`Surface.CreateExtrusion(profile, direction)` 要求挤出方向**不在轮廓平面内**。当挤出方向与轮廓平面平行时（即方向向量在平面内），轮廓中与挤出方向平行的边会扫掠出**零面积侧面**，导致 Brep 退化为非预期结构（如 Faces=1, Edges=3），`CapPlanarHoles` 无法封盖。
+
+**安全条件**：挤出方向应**垂直于轮廓平面**（即沿平面法向），或至少有显著的法向分量。
+
+**本案**：`_rect13` 在 YZ 平面（法向 X 轴），挤出方向 `(0,0,6)`（Z 轴在 YZ 平面内）→ 退化。
+
+**三层修复**：
+1. **Geometry 层**（[SolidGeo.cs](file:///d:/Data/Project/Rhino_Workspace/Rhino/Geometry/Solid/SolidGeo.cs#L271-L279)）：增加方向退化检测——`profile.TryGetPlane` 获取轮廓平面，检查 `direction · normal` 是否接近零，是则输出错误并返回 null
+2. **测试层**：改用 YZ 平面矩形 + X 方向挤出（正确的非 XY 平面测试）
+3. **文档层**：[Solid.md](file:///d:/Data/Project/Rhino_Workspace/Rhino/Command/basicCommand/Solid.md#L191-L194) 补充实实现约束
+
+> **是否是文档不清楚导致的？**
+> **是**。修改前 RhinoCommon 文档和我们的文档都没有明确警告这种退化情况，Geometry 层也没有防御性检测。程序员无从知道"方向在平面内会退化"。修复后 Geometry 层会主动检测并返回明确错误，文档也补充了约束说明。
+
+### 18.6 对后续测试链的启示
+
+| 启示 | 应用到 |
+|------|-------|
+| 追踪 PointCloud/Brep 等 mutable 对象的实际数据流 | 链 5 的 Mesh 操作 |
+| 确认所有 Fillet 类 API 的相切条件 | 链 6 的 CreatePipe |
+| 验证 NurbsCurve/NurbsSurface 构造的 Knots.Count | 链 2 的 CreateNurbsCurve/CreateSrfControlPts |
+| 确认所有"封盖/合并"类 API 的返回值是否被接收 | 链 6 的 CreateCap/CreateLoftSolid |
+
+---

@@ -29,29 +29,34 @@ namespace Rh.Geo.Crv
 
             // 分离水平分量和垂直分量
             Vector3d lineVec = end - start;
-            double pointDist = lineVec.Length;
-            double halfDist = pointDist / 2.0;
 
             // 水平方向：lineVec 在垂直于重力的平面上的投影
             Vector3d verticalComp = gravityUnit * (lineVec * gravityUnit);
             Vector3d horizontalVec = lineVec - verticalComp;
             double horizontalDist = horizontalVec.Length;
 
-            // 牛顿迭代求解悬链线参数 a
-            double a = halfDist;
+            // 悬链线公式 length = 2a·sinh(d/2a) 中的 d 是水平距离
+            // 两点垂直对齐时（horizontalDist=0），悬链线无定义
+            if (horizontalDist < 1e-12)
+                return null;
+
+            double halfHoriz = horizontalDist / 2.0;
+
+            // 牛顿迭代求解悬链线参数 a（使用水平距离）
+            double a = halfHoriz;
 
             for (int iter = 0; iter < 50; iter++)
             {
-                double sinhVal = System.Math.Sinh(halfDist / a);
+                double sinhVal = System.Math.Sinh(halfHoriz / a);
                 double f = 2.0 * a * sinhVal - length;
-                double df = 2.0 * sinhVal - 2.0 * halfDist / a * System.Math.Cosh(halfDist / a);
+                double df = 2.0 * sinhVal - 2.0 * halfHoriz / a * System.Math.Cosh(halfHoriz / a);
 
                 if (System.Math.Abs(df) < 1e-15)
                     break;
 
                 a = a - f / df;
                 if (a <= 0)
-                    a = halfDist * 0.5;
+                    a = halfHoriz * 0.5;
             }
 
             // 采样点：沿 start→end 线性插值，再沿重力方向添加下垂量
@@ -61,7 +66,8 @@ namespace Rh.Geo.Crv
             for (int i = 0; i <= sampleCount; i++)
             {
                 double t = (double)i / sampleCount;
-                double x = -halfDist + t * pointDist;
+                // x 是水平方向上的位置，范围 [-halfHoriz, halfHoriz]
+                double x = -halfHoriz + t * horizontalDist;
                 double sag = a * (System.Math.Cosh(x / a) - 1.0);
 
                 Point3d basePt = start + lineVec * t;

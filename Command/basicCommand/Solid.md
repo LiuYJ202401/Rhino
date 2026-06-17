@@ -6,6 +6,19 @@
 
 创建闭合实体对象（Brep，`IsSolid=true`）。与 Surface 功能区的核心区别：Solid 版本强制调用 `CapPlanarHoles` 或使用带 `cap` 参数的 API，使结果闭合。
 
+## 关键约束：RhinoCommon 返回值语义
+
+以下 API 返回**新的独立对象**，不修改原对象。调用者必须接收返回值，否则结果被丢弃：
+
+| API | 错误用法（丢弃返回值） | 正确用法 |
+|-----|---------------------|---------|
+| `Brep.CapPlanarHoles(tol)` | `brep.CapPlanarHoles(tol);` | `brep = brep.CapPlanarHoles(tol);` |
+| `Brep.JoinBreps(breps, tol)` | （必须接收数组） | `var arr = Brep.JoinBreps(...);` |
+| `Brep.CreateBooleanXxx(...)` | （必须接收数组） | `var arr = Brep.CreateBooleanXxx(...);` |
+
+> 本文档中所有标注 `→ CapPlanarHoles` 的方法，其 Geometry 层实现必须遵守此约束。
+> 同类陷阱：`PointCloud` 的 Add/Remove 也返回新对象（见 Point.md）。
+
 ## 默认值机制
 
 - 标注 `[可选]` 的参数可不传入，Command 层自动从 Data 层读取默认值
@@ -173,6 +186,10 @@
 | 输出 | `Brep` — 挤出实体 |
 | 报错 | 曲线未闭合或方向为零向量时输出错误消息并返回 null |
 | RhinoCommon | `Surface.CreateExtrusion` → `Brep.CreateFromSurface` → `CapPlanarHoles` |
+
+> **实现约束（挤出方向）**：挤出方向**不能与轮廓平面平行**（即方向向量不能在平面内）。
+> 否则轮廓中与挤出方向平行的边会扫掠出零面积侧面，导致 Brep 退化，`CapPlanarHoles` 无法封盖。
+> 安全做法：挤出方向沿轮廓平面的法向，或至少有显著法向分量。
 
 ### CreateRevolveSolid
 

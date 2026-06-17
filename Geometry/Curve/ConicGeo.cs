@@ -27,18 +27,27 @@ namespace Rh.Geo.Crv
             if (rho <= 0.0 || rho >= 1.0)
                 return null;
 
+            // 圆锥曲线 = 二次有理 Bezier（单段）
+            // 只需指定 2 个独立参数：order（阶数）和 pointCount（控制点数）
+            // 其余由 NURBS 公式推导：
+            //   degree     = order - 1
+            //   Knots.Count = pointCount + degree - 1
+            const int order = 3;       // 二次曲线
+            const int pointCount = 3;  // 单段 Bezier
+            int degree = order - 1;
+            int knotCount = pointCount + degree - 1;
+
+            // 钳端节点向量：首 degree 个为 0，末 degree 个为 1
+            // degree=2 → [0, 0, 1, 1]
             double w = rho / (1.0 - rho);
 
-            var nc = new NurbsCurve(3, true, 3, 3);
+            var nc = new NurbsCurve(3, true, order, pointCount);
             nc.Points.SetPoint(0, start.X, start.Y, start.Z, 1.0);
             nc.Points.SetPoint(1, apex.X, apex.Y, apex.Z, w);
             nc.Points.SetPoint(2, end.X, end.Y, end.Z, 1.0);
-            nc.Knots[0] = 0.0;
-            nc.Knots[1] = 0.0;
-            nc.Knots[2] = 0.0;
-            nc.Knots[3] = 1.0;
-            nc.Knots[4] = 1.0;
-            nc.Knots[5] = 1.0;
+
+            for (int i = 0; i < knotCount; i++)
+                nc.Knots[i] = (i < degree) ? 0.0 : 1.0;
 
             return nc;
         }

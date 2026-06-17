@@ -218,7 +218,7 @@ namespace Rh.Cmd
                 UpdateDefault("vertical", vertical);
                 UpdateDefault("around", around);
             }
-            return MeshGeo.CreateFromCone(baseCenter, normal, bottomRadius, height, vertical, around);
+            return MeshGeo.CreateFromCone(baseCenter, normal, bottomRadius, height, vertical, around, capEnd);
         }
 
         // ------------------------------------------------------------
@@ -355,6 +355,15 @@ namespace Rh.Cmd
             bool trimback,
             bool isPreview = false)
         {
+            foreach (var curve in curves)
+            {
+                if (curve == null)
+                {
+                    RhinoApp.WriteLine("[CreateMeshPatch] 错误：集合中包含 null 元素");
+                    return null;
+                }
+            }
+
             if (!isPreview)
             {
                 UpdateDefault("CreateMeshPatch.angleTolerance", angleToleranceRadians);

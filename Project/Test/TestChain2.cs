@@ -23,7 +23,7 @@ namespace Rh.Project.Test
         private const string C = "Chain2";
 
         // 衔接数据
-        private NurbsCurve _nurbsCurve1;   // 步骤1 → 步骤12,14
+        private NurbsCurve _nurbsCurve1;   // 步骤1 → 步骤12
         private NurbsCurve _interpCrv3;    // 步骤3 → 步骤13
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
@@ -156,14 +156,19 @@ namespace Rh.Project.Test
 
             Step("SurfaceCmd.CreateNetworkSrf(#1)", () =>
             {
-                // 步骤1的 NurbsCurve + 3条临时U/V曲线
-                var uCrv1 = new LineCurve(
-                    new Point3d(120,0,0), new Point3d(120,8,0)).ToNurbsCurve();
-                var uCrv2 = new LineCurve(
-                    new Point3d(136,0,0), new Point3d(136,8,0)).ToNurbsCurve();
+                // 用步骤1的 NurbsCurve 作为一条 U 方向曲线
+                // 创建平行的第二条 U 曲线 + 两条 V 连接曲线，构成有效网络
+                var uCrv2Pts = new List<Point3d> {
+                    new Point3d(120,4,0), new Point3d(124,6,3),
+                    new Point3d(128,8,0), new Point3d(132,10,3),
+                    new Point3d(136,12,0)
+                };
+                var uCrv2 = CurveCmd.CreateNurbsCurve(uCrv2Pts, 3);
                 var vCrv1 = new LineCurve(
-                    new Point3d(120,0,0), new Point3d(136,0,0)).ToNurbsCurve();
-                var curves = new Curve[] { _nurbsCurve1, uCrv1, uCrv2, vCrv1 };
+                    new Point3d(120,0,0), new Point3d(120,4,0)).ToNurbsCurve();
+                var vCrv2 = new LineCurve(
+                    new Point3d(136,8,0), new Point3d(136,12,0)).ToNurbsCurve();
+                var curves = new Curve[] { _nurbsCurve1, uCrv2, vCrv1, vCrv2 };
                 var brep = SurfaceCmd.CreateNetworkSrf(curves);
                 Assert.IsValid(brep, "CreateNetworkSrf(#1)");
                 WriteToDoc(brep, C, "Surface");
@@ -187,13 +192,15 @@ namespace Rh.Project.Test
 
             Step("SurfaceCmd.CreatePatch", () =>
             {
-                // 临时弧线 + 临时线段 + 步骤1曲线
+                // 在局部区域创建临时曲线，避免与远处物体重合
                 var tempArc = CurveCmd.CreateArc(
                     new Plane(new Point3d(124,116,0), Vector3d.ZAxis),
                     new Point3d(124,116,0), 4, 0, Math.PI).ToNurbsCurve();
                 var tempLine = new LineCurve(
                     new Point3d(120,112,0), new Point3d(128,120,0)).ToNurbsCurve();
-                var geometry = new GeometryBase[] { tempArc, tempLine, _nurbsCurve1 };
+                var tempLine2 = new LineCurve(
+                    new Point3d(122,108,0), new Point3d(130,116,2)).ToNurbsCurve();
+                var geometry = new GeometryBase[] { tempArc, tempLine, tempLine2 };
                 var brep = SurfaceCmd.CreatePatch(geometry);
                 Assert.IsValid(brep, "CreatePatch");
                 WriteToDoc(brep, C, "Surface");
@@ -213,34 +220,64 @@ namespace Rh.Project.Test
 
             Step("SurfaceCmd.CreateDrape", () =>
             {
-                // 临时 Brep 作为垂幕对象
-                var tempBrep = SurfaceCmd.CreatePlane(
-                    new Plane(new Point3d(120,160,0), Vector3d.ZAxis),
-                    new Interval(0, 8), new Interval(0, 6));
+                // 创建有高度的 Box 作为垂幕对象（射线需从上方射下才能命中）
+                var tempBrep = SolidCmd.CreateBox(
+                    new Point3d(120,160,0), new Point3d(128,168,0),
+                    new Vector3d(0, 0, 4));
                 var objects = new GeometryBase[] { tempBrep };
-                var brep = SurfaceCmd.CreateDrape(objects, Plane.WorldXY, 10, 10);
+                // 投影平面在物体上方（Z=6），射线方向 -Z 向下投射
+                var brep = SurfaceCmd.CreateDrape(objects,
+                    new Plane(new Point3d(120,160,6), Vector3d.ZAxis), 10, 10);
                 Assert.IsValid(brep, "CreateDrape");
                 WriteToDoc(brep, C, "Surface");
             });
 
-            // 步骤17：高度场（如果图片文件不存在则跳过）
-            string imagePath = "test_heightfield.png";
+
+            
+
+            // 步骤17：高度场（3 个重载全覆盖）
+            // 实际使用时，imagePath 由用户提供（任意有效路径）
+            // 测试用图片放在 Assets/Test 目录（只有项目层使用资源），通过 csproj 通配符复制到插件输出目录
+            string assemblyDir = Path.GetDirectoryName(
+                System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string imagePath = Path.Combine(assemblyDir, "Assets", "Test", "test_heightfield.png");
             if (!File.Exists(imagePath))
             {
-                Skip("SurfaceCmd.CreateHeightfield", "测试图片文件不存在");
+                Skip("SurfaceCmd.CreateHeightfield", $"测试图片不存在: {imagePath}");
             }
             else
             {
-                Step("SurfaceCmd.CreateHeightfield", () =>
+                // 步骤17a：重载 1（完全控制）——用户指定所有物理尺寸和采样密度
+                Step("SurfaceCmd.CreateHeightfield(#1 完全控制)", () =>
                 {
                     var plane = new Plane(new Point3d(120,172,0), Vector3d.ZAxis);
                     var brep = SurfaceCmd.CreateHeightfield(
                         imagePath, plane, 10, 8, 4, 20, 16);
-                    Assert.IsValid(brep, "CreateHeightfield");
+                    Assert.IsValid(brep, "CreateHeightfield(#1)");
+                    if (brep != null) WriteToDoc(brep, C, "Surface");
+                });
+
+                // 步骤17b：重载 2（按图片比例自动适配高度）——高度由图片宽高比推导
+                Step("SurfaceCmd.CreateHeightfield(#2 按比例)", () =>
+                {
+                    var plane = new Plane(new Point3d(140,172,0), Vector3d.ZAxis);
+                    var brep = SurfaceCmd.CreateHeightfield(
+                        imagePath, plane, 10, 4, 20, 16);
+                    Assert.IsValid(brep, "CreateHeightfield(#2)");
+                    if (brep != null) WriteToDoc(brep, C, "Surface");
+                });
+
+                // 步骤17c：重载 3（全自动适配）——高度和采样密度都由图片推导（上限50）
+                Step("SurfaceCmd.CreateHeightfield(#3 全自动)", () =>
+                {
+                    var plane = new Plane(new Point3d(160,172,0), Vector3d.ZAxis);
+                    var brep = SurfaceCmd.CreateHeightfield(
+                        imagePath, plane, 10, 4);
+                    Assert.IsValid(brep, "CreateHeightfield(#3)");
                     if (brep != null) WriteToDoc(brep, C, "Surface");
                 });
             }
-
+            
             Finish(C);
             return Result.Success;
         }

@@ -93,7 +93,8 @@
 |------|------|
 | 功能 | 向已有点云添加点 |
 | 输入 | `PointCloud cloud` — 目标点云，`IEnumerable<Point3d> points` — 待添加点 |
-| 输出 | `PointCloud` — 新点云（原点云不变，返回副本） |
+| 输出 | `PointCloud` — **新点云（原点云不变，返回副本）** |
+| 约束 | **必须接收返回值**：`cloud = AddPointsToCloud(cloud, pts);`，否则原 cloud 不变 |
 | 报错 | cloud 或 points 为 null 时返回原 cloud |
 
 ### RemovePointsFromCloud
@@ -104,7 +105,8 @@
 |------|------|
 | 功能 | 从点云中移除指定索引的点 |
 | 输入 | `PointCloud cloud` — 目标点云，`IEnumerable<int> indices` — 待移除点索引 |
-| 输出 | `PointCloud` — 新点云（原点云不变，返回副本） |
+| 输出 | `PointCloud` — **新点云（原点云不变，返回副本）** |
+| 约束 | **必须接收返回值**：`cloud = RemovePointsFromCloud(cloud, idx);`，否则原 cloud 不变 |
 | 报错 | 索引越界时跳过该索引 |
 
 ### ReducePointCloud

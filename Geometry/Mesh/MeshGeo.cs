@@ -70,6 +70,29 @@ namespace Rh.Geo.Msh
             return Mesh.CreateIcoSphere(sphere, subdivisions);
         }
 
+        /// <summary>创建圆形封盖网格（扇形三角化）</summary>
+        private static Mesh CreateCircleCap(Plane plane, double radius, int segments, bool flipNormal)
+        {
+            var cap = new Mesh();
+            cap.Vertices.Add(plane.Origin); // 中心顶点（索引 0）
+            for (int i = 0; i < segments; i++)
+            {
+                double angle = 2.0 * System.Math.PI * i / segments;
+                cap.Vertices.Add(plane.PointAt(
+                    radius * System.Math.Cos(angle),
+                    radius * System.Math.Sin(angle)));
+            }
+            for (int i = 0; i < segments; i++)
+            {
+                int next = (i + 1) % segments;
+                if (flipNormal)
+                    cap.Faces.AddFace(0, 1 + next, 1 + i);
+                else
+                    cap.Faces.AddFace(0, 1 + i, 1 + next);
+            }
+            return cap;
+        }
+
         /// <summary>从 Cylinder 创建网格圆柱</summary>
         public static Mesh CreateFromCylinder(Point3d center, Vector3d normal, double radius, double height,
             int vertical, int around, bool capEnds)
@@ -81,19 +104,35 @@ namespace Rh.Geo.Msh
             Circle baseCircle = new Circle(plane, radius);
             Cylinder cylinder = new Cylinder(baseCircle, height);
             Mesh mesh = Mesh.CreateFromCylinder(cylinder, vertical, around);
+
+            if (capEnds && mesh != null)
+            {
+                // 底面封盖（法向朝下）
+                mesh.Append(CreateCircleCap(plane, radius, around, true));
+                // 顶面封盖（法向朝上）
+                Plane topPlane = new Plane(center + normal * height, normal);
+                mesh.Append(CreateCircleCap(topPlane, radius, around, false));
+            }
             return mesh;
         }
 
         /// <summary>从 Cone 创建网格圆锥</summary>
         public static Mesh CreateFromCone(Point3d baseCenter, Vector3d normal, double bottomRadius, double height,
-            int vertical, int around)
+            int vertical, int around, bool capEnd)
         {
             if (bottomRadius <= 0 || height <= 0)
                 return null;
             normal.Unitize();
             Plane plane = new Plane(baseCenter, normal);
             Cone cone = new Cone(plane, height, bottomRadius);
-            return Mesh.CreateFromCone(cone, vertical, around);
+            Mesh mesh = Mesh.CreateFromCone(cone, vertical, around);
+
+            if (capEnd && mesh != null)
+            {
+                // 底面封盖（法向朝下，与侧面外法向相反）
+                mesh.Append(CreateCircleCap(plane, bottomRadius, around, true));
+            }
+            return mesh;
         }
 
         /// <summary>从 Torus 创建网格圆环</summary>
@@ -184,19 +223,127 @@ namespace Rh.Geo.Msh
         // 从点集创建
         // ================================================================
 
-        /// <summary>从点集创建凸包网格</summary>
+        /// <summary>从点集创建 3D 凸包网格（增量算法）</summary>
         public static Mesh CreateConvexHull(IEnumerable<Point3d> points, double tolerance, double angleTolerance)
         {
             if (points == null)
                 return null;
-            var pointList = new List<Point3d>(points);
-            if (pointList.Count < 4)
+
+            // 去重
+            var raw = new List<Point3d>(points);
+            var pts = new List<Point3d>();
+            foreach (var p in raw)
+            {
+                bool dup = false;
+                foreach (var q in pts)
+                {
+                    if (p.DistanceTo(q) < tolerance) { dup = true; break; }
+                }
+                if (!dup) pts.Add(p);
+            }
+            if (pts.Count < 4)
                 return null;
 
-            // 手动构造网格：添加所有顶点
+            // 找到 4 个不共面的点构成初始四面体
+            int i0 = 0, i1 = -1, i2 = -1, i3 = -1;
+            // i1：与 i0 不重合
+            for (int i = 1; i < pts.Count; i++)
+            {
+                if (pts[i].DistanceTo(pts[i0]) > tolerance) { i1 = i; break; }
+            }
+            if (i1 < 0) return null;
+            // i2：与 i0→i1 不共线
+            Vector3d v01 = pts[i1] - pts[i0];
+            for (int i = 1; i < pts.Count; i++)
+            {
+                if (i == i1) continue;
+                Vector3d cross = Vector3d.CrossProduct(v01, pts[i] - pts[i0]);
+                if (cross.Length > tolerance) { i2 = i; break; }
+            }
+            if (i2 < 0) return null;
+            // i3：与 i0,i1,i2 不共面
+            Vector3d normal012 = Vector3d.CrossProduct(pts[i1] - pts[i0], pts[i2] - pts[i0]);
+            for (int i = 1; i < pts.Count; i++)
+            {
+                if (i == i1 || i == i2) continue;
+                if (System.Math.Abs(Vector3d.Multiply(normal012, pts[i] - pts[i0])) > tolerance)
+                { i3 = i; break; }
+            }
+            if (i3 < 0) return null;
+
+            // 添加所有顶点到 mesh
             var mesh = new Mesh();
-            foreach (var pt in pointList)
-                mesh.Vertices.Add(pt);
+            foreach (var p in pts)
+                mesh.Vertices.Add(p);
+
+            // 用三角形列表表示面（顶点索引，外法向 CCW）
+            var faces = new List<int[]>(); // 每个 int[3] 是一个三角形面
+            Point3d centroid = (pts[i0] + pts[i1] + pts[i2] + pts[i3]) / 4.0;
+
+            // 添加面，确保法向朝外
+            System.Action<int, int, int> addOutward = (a, b, c) =>
+            {
+                Vector3d n = Vector3d.CrossProduct(pts[b] - pts[a], pts[c] - pts[a]);
+                if (Vector3d.Multiply(n, centroid - pts[a]) > 0)
+                    faces.Add(new int[] { b, a, c }); // 翻转
+                else
+                    faces.Add(new int[] { a, b, c });
+            };
+            addOutward(i0, i1, i2);
+            addOutward(i0, i1, i3);
+            addOutward(i0, i2, i3);
+            addOutward(i1, i2, i3);
+
+            // 增量处理剩余点
+            var used = new HashSet<int> { i0, i1, i2, i3 };
+            for (int pi = 0; pi < pts.Count; pi++)
+            {
+                if (used.Contains(pi)) continue;
+                Point3d p = pts[pi];
+
+                // 找到从 p 可见的面（p 在面外侧）
+                var visible = new List<int>();
+                for (int fi = 0; fi < faces.Count; fi++)
+                {
+                    var f = faces[fi];
+                    Vector3d n = Vector3d.CrossProduct(pts[f[1]] - pts[f[0]], pts[f[2]] - pts[f[0]]);
+                    if (Vector3d.Multiply(n, p - pts[f[0]]) > tolerance)
+                        visible.Add(fi);
+                }
+                if (visible.Count == 0) continue; // 点在内部
+
+                // 收集可见面的所有有向边，取消成对的相反边后得到边界边
+                var dirEdges = new List<(int from, int to)>();
+                foreach (int fi in visible)
+                {
+                    var f = faces[fi];
+                    dirEdges.Add((f[0], f[1]));
+                    dirEdges.Add((f[1], f[2]));
+                    dirEdges.Add((f[2], f[0]));
+                }
+                var edgeSet = new HashSet<(int, int)>(dirEdges);
+                var boundary = new List<(int from, int to)>();
+                foreach (var e in dirEdges)
+                {
+                    if (!edgeSet.Contains((e.to, e.from)))
+                        boundary.Add(e); // 边界边（有向，保持 CCW 方向）
+                }
+
+                // 移除可见面（从后往前删，避免索引偏移）
+                visible.Sort();
+                for (int i = visible.Count - 1; i >= 0; i--)
+                    faces.RemoveAt(visible[i]);
+
+                // 为每条边界边创建新面 (from, to, pi)
+                foreach (var e in boundary)
+                    faces.Add(new int[] { e.from, e.to, pi });
+            }
+
+            // 将面写入 mesh
+            foreach (var f in faces)
+                mesh.Faces.AddFace(f[0], f[1], f[2]);
+
+            mesh.Normals.ComputeNormals();
             return mesh;
         }
 
@@ -206,7 +353,10 @@ namespace Rh.Geo.Msh
         {
             if (points == null)
                 return null;
-            return Mesh.CreateFromTessellation(points, edges ?? new List<List<Point3d>>(), plane, allowNewVertices);
+            return Mesh.CreateFromTessellation(
+                new List<Point3d>(points),
+                edges != null ? new List<IEnumerable<Point3d>>(edges) : null,
+                plane, allowNewVertices);
         }
 
         /// <summary>
@@ -246,17 +396,34 @@ namespace Rh.Geo.Msh
 
         /// <summary>
         /// 从点集创建网格补面（简化版，仅点集）。
+        /// tolerance 用于去除过近的重复点，避免退化三角形。
         /// </summary>
         public static Mesh CreatePatch(IEnumerable<Point3d> points, double tolerance)
         {
             if (points == null)
                 return null;
 
-            var pointList = new List<Point3d>(points);
+            // 使用 tolerance 去除过近的重复点
+            var rawList = new List<Point3d>(points);
+            var pointList = new List<Point3d>();
+            foreach (var p in rawList)
+            {
+                bool tooClose = false;
+                foreach (var q in pointList)
+                {
+                    if (p.DistanceTo(q) < tolerance)
+                    {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                if (!tooClose)
+                    pointList.Add(p);
+            }
+
             if (pointList.Count < 3)
                 return null;
 
-            // 尝试平面拟合 + 三角化
             var result = Plane.FitPlaneToPoints(pointList, out Plane plane);
             if (result == PlaneFitResult.Success)
             {

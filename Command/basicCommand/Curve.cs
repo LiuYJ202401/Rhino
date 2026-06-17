@@ -248,8 +248,8 @@ namespace Rh.Cmd
 
         /// <summary>
         /// 创建圆（重载 7：与两条曲线相切的圆角圆）。
-        /// RhinoCommon：Curve.CreateFillet(curve1, curve2, radius, t0, t1) 返回 Arc，
-        /// 由 Arc 可获得对应的圆。
+        /// 支持：相交线（CreateFillet）+ 平行线（半圆 r=d/2，CreateFillet 不支持的退化情况）。
+        /// 调用 Geometry 层 FilletGeo.CreateFilletCircles。
         /// </summary>
         public static Circle[] CreateCircle(Curve curve1, Curve curve2, double radius,
             double tolerance, bool isPreview = false)
@@ -260,14 +260,10 @@ namespace Rh.Cmd
                 return new Circle[0];
             }
 
-            // 在曲线中点附近搜索相切圆角
-            double t0 = curve1.Domain.Mid;
-            double t1 = curve2.Domain.Mid;
+            var circles = FilletGeo.CreateFilletCircles(curve1, curve2, radius, tolerance);
 
-            Arc filletArc = Curve.CreateFillet(curve1, curve2, radius, t0, t1);
-
-            if (filletArc.IsValid)
-                return new Circle[] { new Circle(filletArc.Plane, filletArc.Center, filletArc.Radius) };
+            if (circles.Length > 0)
+                return circles;
 
             RhinoApp.WriteLine("[CreateCircle] 错误：未能生成相切圆角圆");
             return new Circle[0];
@@ -343,7 +339,8 @@ namespace Rh.Cmd
 
         /// <summary>
         /// 创建圆弧（重载 4：与两条曲线相切的圆角弧）。
-        /// RhinoCommon：Curve.CreateFillet(curve1, curve2, radius, t0, t1)
+        /// 支持：相交线（CreateFillet）+ 平行线（半圆 r=d/2，CreateFillet 不支持的退化情况）。
+        /// 调用 Geometry 层 FilletGeo.CreateFilletArcs。
         /// </summary>
         public static Arc[] CreateArc(Curve curve1, Curve curve2, double radius,
             double tolerance, bool isPreview = false)
@@ -354,13 +351,10 @@ namespace Rh.Cmd
                 return new Arc[0];
             }
 
-            double t0 = curve1.Domain.Mid;
-            double t1 = curve2.Domain.Mid;
+            var arcs = FilletGeo.CreateFilletArcs(curve1, curve2, radius, tolerance);
 
-            Arc filletArc = Curve.CreateFillet(curve1, curve2, radius, t0, t1);
-
-            if (filletArc.IsValid)
-                return new Arc[] { filletArc };
+            if (arcs.Length > 0)
+                return arcs;
 
             RhinoApp.WriteLine("[CreateArc] 错误：未能生成相切圆角弧");
             return new Arc[0];
@@ -1111,10 +1105,21 @@ namespace Rh.Cmd
                 return new Curve[0];
             }
 
+            // 输入校验：检查 null 元素
+            var curveList = new List<Curve>(curves);
+            for (int i = 0; i < curveList.Count; i++)
+            {
+                if (curveList[i] == null)
+                {
+                    RhinoApp.WriteLine($"[CreateApplyCrv] 错误：曲线集合中索引 {i} 为 null");
+                    return new Curve[0];
+                }
+            }
+
             double tolerance = ActiveTolerance();
             var result = new List<Curve>();
 
-            foreach (Curve crv in curves)
+            foreach (Curve crv in curveList)
             {
                 BrepFace face = target.Faces[0];
 
@@ -1144,6 +1149,15 @@ namespace Rh.Cmd
             {
                 RhinoApp.WriteLine("[CreateDupEdge] 错误：曲面或边集合为空");
                 return new Curve[0];
+            }
+
+            foreach (var edge in edges)
+            {
+                if (edge == null)
+                {
+                    RhinoApp.WriteLine("[CreateDupEdge] 错误：集合中包含 null 元素");
+                    return new Curve[0];
+                }
             }
 
             var result = new List<Curve>();

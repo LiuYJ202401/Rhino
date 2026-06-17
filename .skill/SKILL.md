@@ -164,14 +164,40 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 - **值类型断言用 `NotNull`**：`Circle`/`Arc`/`Line`/`Polyline`/`Ellipse` 等是值类型，不继承 `GeometryBase`，用 `Assert.NotNull`
 - **引用类型断言用 `IsValid`**：`Curve`/`Brep`/`Mesh`/`Surface` 等继承 `GeometryBase`，用 `Assert.IsValid`（同时检查 null 和有效性）
 
-### 2.9 类型创建规则
+### 2.9 接口设计原则
+
+**原则 1：接口自由（尽可能覆盖独立输入组合）**
+
+被调用测试的代码可能用于多种用途，面对多种不同的输入。接口要尽可能自由——**如果有多种不同的独立输入组合，就要提供对应的重载**。
+
+这与"不要冗余输入"不矛盾：
+- **冗余输入**：一个参数可以从其他参数推导出来（如 NURBS 的 `degree` 可从 `order` 推导）→ 不应作为独立参数
+- **独立输入组合**：不同的使用场景需要不同的参数集合（如 Heightfield 有时指定物理尺寸，有时按图片比例自动适配）→ 应提供多个重载
+
+**设计步骤**：
+1. 识别哪些参数是**真正独立的**（不能从其他参数推导）
+2. 识别哪些参数在**某些场景下不需要用户指定**（可自动推导）
+3. 为每种典型的独立输入组合提供一个重载
+4. 最常用的组合作为主重载，其他作为补充
+
+### 2.10 测试覆盖原则
+
+**原则 2：测试应尽可能覆盖所有代码的可用性**
+
+测试的目的不是"让代码通过"，而是"验证代码在各种输入下都能正确工作"。如果有多个重载、多种输入场景，就应该**编写多个测试**，分别覆盖每一种情况。
+
+- 每个重载至少有一个测试
+- 同一重载的不同输入场景（如不同平面、不同参数组合）应分别测试
+- 不要为了通过断言而改变测试目标——测试目标是固定的，代码实现应该满足测试
+
+### 2.11 类型创建规则
 
 - **优先通过 Command/Geometry 层方法创建几何**，不要直接 `new Circle(...)` / `new Arc(...)` / `new Brep(...)`
 - **原因**：RhinoCommon 的值类型构造函数签名复杂且版本差异大（如 `Arc` 有 6 种构造函数），凭记忆容易出错
 - **正确做法**：`CurveCmd.CreateCircle(...)` / `SolidCmd.CreateBox(...)` / `SurfaceCmd.CreatePlane(...)`
 - **例外**：Geometry 层内部实现可以直接使用 RhinoCommon 构造函数（因为它是封装的最后一层）
 
-### 2.10 Rhino 插件命令发现机制
+### 2.12 Rhino 插件命令发现机制
 
 **问题现象**：新增的命令在 Rhino 命令行中无法找到（输入后提示"Unknown command"），但代码编译无误、类继承正确。
 
@@ -193,7 +219,7 @@ public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
 
 > **注意**：发布时必须移除此重写或改回 `WhenNeeded`，否则会拖慢 Rhino 启动速度。
 
-### 2.11 Geometry 层实现规范
+### 2.13 Geometry 层实现规范
 
 以下规则源于测试链 1 的实战教训，记录在 `Project/Test/Overview.md` 第 15 节。
 

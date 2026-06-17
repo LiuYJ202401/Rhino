@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using Rhino;
 using Rhino.Geometry;
 using Rh.Geo.Crv;
 
@@ -22,7 +24,11 @@ namespace Rh.Geo.Sld
             if (brep == null)
                 return null;
             if (!brep.IsSolid)
-                brep.CapPlanarHoles(tolerance);
+            {
+                var capped = brep.CapPlanarHoles(tolerance);
+                if (capped != null)
+                    return capped;
+            }
             return brep;
         }
 
@@ -263,6 +269,18 @@ namespace Rh.Geo.Sld
         {
             if (profile == null || !profile.IsClosed || direction.IsZero)
                 return null;
+
+            // 检测挤出方向是否在轮廓平面内（会导致退化几何，无法封盖）
+            if (profile.TryGetPlane(out Plane profilePlane, tolerance))
+            {
+                double dot = Math.Abs(direction * profilePlane.Normal);
+                if (dot < tolerance)
+                {
+                    RhinoApp.WriteLine("[CreateExtrudeSolid] 错误：挤出方向与轮廓平面平行，会导致退化几何");
+                    return null;
+                }
+            }
+
             var srf = Surface.CreateExtrusion(profile, direction);
             if (srf == null)
                 return null;

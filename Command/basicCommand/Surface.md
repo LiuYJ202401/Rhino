@@ -386,10 +386,47 @@
 | 项目 | 说明 |
 |------|------|
 | 功能 | 由灰度图像创建曲面 |
-| 输入 | `string imagePath` — 图像路径，`Plane plane` — 所在平面，`double width` — 宽度，`double height` — 高度，`double maxHeight` — 最大高度，`int samplesX` — X 向采样数 [可选，默认 50]，`int samplesY` — Y 向采样数 [可选，默认 50]，`bool isPreview = false` |
+| 重载数 | 3 |
+| 采样方式 | 点采样（取每个采样区域中心像素，与 Rhino 原生一致） |
+| RhinoCommon | `NurbsSurface.CreateThroughPoints`（插值曲面，穿过所有采样点） |
+
+#### 重载 1（完全控制）
+
+用户指定所有物理尺寸和采样密度。
+
+| 项目 | 说明 |
+|------|------|
+| 输入 | `string imagePath`, `Plane plane`, `double width`, `double heightSize`, `double maxHeight`, `int samplesX = 50`, `int samplesY = 50`, `bool isPreview = false` |
 | 输出 | `Brep` — 高度场曲面 |
-| 报错 | 图像加载失败时输出错误消息并返回 null |
-| RhinoCommon | 无直接构造，Geometry 层手动读取像素 + 点网格插值 |
+| 适用 | 需要完全控制物理尺寸和采样精度的场景 |
+
+#### 重载 2（按图片比例自动适配高度）
+
+用户只需指定物理宽度和采样密度，高度由图片宽高比自动推导。
+
+| 项目 | 说明 |
+|------|------|
+| 输入 | `string imagePath`, `Plane plane`, `double width`, `double maxHeight`, `int samplesX`, `int samplesY`, `bool isPreview = false` |
+| 输出 | `Brep` — 高度场曲面（`heightSize = width × imgHeight/imgWidth`） |
+| 适用 | 保持图片原始比例，避免拉伸变形 |
+
+#### 重载 3（全自动适配）
+
+用户只需指定物理宽度和最大高度，高度和采样密度都由图片自动推导。
+
+| 项目 | 说明 |
+|------|------|
+| 输入 | `string imagePath`, `Plane plane`, `double width`, `double maxHeight`, `bool isPreview = false` |
+| 输出 | `Brep` — 高度场曲面（自动推导 `heightSize` 和 `samplesX/samplesY`） |
+| 适用 | 最简调用，采样密度按图片像素（上限 50 避免过密） |
+
+#### 通用说明
+
+- 图像加载失败时输出错误消息并返回 null
+- `imagePath` 必须是**有效的图片文件绝对路径或相对路径**，支持 PNG/JPG/BMP 等常见格式
+- 图片的**灰度值**决定高度：白色 = `maxHeight`，黑色 = 0
+- 实际使用时，用户可通过文件选择对话框获取路径（如 `Rhino.UI.OpenFileDialog`）
+- 测试场景下，测试图片 `test_heightfield.png` 存放在 [Assets 目录](../../Assets/README.md)，通过 csproj 通配符复制到插件输出目录
 
 ### CreateDevLoft
 
@@ -427,9 +464,9 @@
 | 特殊曲面 | CreateRibbon | 1 |  |
 | 特殊曲面 | CreateFin | 1 |  |
 | 特殊曲面 | CreateDrape | 1 |  |
-| 特殊曲面 | CreateHeightfield | 1 |  |
+| 特殊曲面 | CreateHeightfield | 3 |  |
 | 特殊曲面 | CreateDevLoft | 1 |  |
-| **合计** | **20 方法** | **25 重载** | **20 方法已实现** |
+| **合计** | **20 方法** | **27 重载** | **20 方法已实现** |
 
 ## 归入其他功能区的命令
 

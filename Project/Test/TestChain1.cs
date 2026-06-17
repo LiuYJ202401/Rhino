@@ -22,14 +22,13 @@ namespace Rh.Project.Test
         private const string C = "Chain1";
 
         // 衔接数据
-        private Polyline _poly12;       // 步骤12 → 步骤41
+        private Polyline _poly12;       // 步骤12
         private Polyline _rect13;       // 步骤13 → 步骤42,49,55
-        private Polyline _rect14;       // 步骤14 → 步骤41
+        private Polyline _rect14;       // 步骤14
         private Circle _circle18;       // 步骤18 → 步骤43
         private Circle _circle19;       // 步骤19 → 步骤43
         private NurbsCurve _ellipse29;  // 步骤29 → 步骤46
         private Brep _plane35;          // 步骤35 → 步骤39,54
-        private Polyline _rect13Copy;   // 步骤13副本 → 步骤49,55
 
         protected override Result RunCommand(RhinoDoc doc, RunMode mode)
         {
@@ -98,21 +97,24 @@ namespace Rh.Project.Test
 
             Step("PointCmd.AddPointsToCloud", () =>
             {
+                // AddPointsToCloud 返回新点云（原点云不变），必须赋值回 cloud5
                 var addPts = new List<Point3d> { new Point3d(1, 22, 0), new Point3d(1, 23, 0) };
-                var result = PointCmd.AddPointsToCloud(cloud5, addPts);
-                Assert.Count(6, result.Count, "AddPointsToCloud");
+                cloud5 = PointCmd.AddPointsToCloud(cloud5, addPts);
+                Assert.Count(6, cloud5.Count, "AddPointsToCloud");
             });
 
             Step("PointCmd.RemovePointsFromCloud", () =>
             {
-                var result = PointCmd.RemovePointsFromCloud(cloud5, new List<int> { 0, 1 });
-                Assert.Count(4, result.Count, "RemovePointsFromCloud");
+                // cloud5 现在是 6 个点（步骤7已赋值回），移除索引0,1 → 剩余4个
+                cloud5 = PointCmd.RemovePointsFromCloud(cloud5, new List<int> { 0, 1 });
+                Assert.Count(4, cloud5.Count, "RemovePointsFromCloud");
             });
 
             Step("PointCmd.ReducePointCloud", () =>
             {
-                var result = PointCmd.ReducePointCloud(cloud5, 1);
-                Assert.Count(3, result.Count, "ReducePointCloud");
+                // cloud5 现在是 4 个点，减少 1 个 → 剩余3个
+                cloud5 = PointCmd.ReducePointCloud(cloud5, 1);
+                Assert.Count(3, cloud5.Count, "ReducePointCloud");
             });
 
             // ================================================================
@@ -245,13 +247,22 @@ namespace Rh.Project.Test
 
             Step("CurveCmd.CreateCircle(#7)", () =>
             {
-                // 临时两条平行线段
-                var c1 = new LineCurve(new Point3d(31, 60, 0), new Point3d(39, 60, 0));
-                var c2 = new LineCurve(new Point3d(31, 66, 0), new Point3d(39, 66, 0));
+                // 场景 A：L 形垂直相交线段，交点处创建相切圆角圆（CreateFillet 路径）
+                var c1 = new LineCurve(new Point3d(28, 60, 0), new Point3d(42, 60, 0));
+                var c2 = new LineCurve(new Point3d(35, 53, 0), new Point3d(35, 67, 0));
                 var circles = CurveCmd.CreateCircle(c1, c2, 3, Tol);
-                Assert.IsTrue(circles != null && circles.Length > 0, "CreateCircle(#7)");
+                Assert.IsTrue(circles != null && circles.Length > 0, "CreateCircle(#7) 场景A:L形相交");
                 if (circles != null)
                     foreach (var c in circles) WriteToDoc(c.ToNurbsCurve(), C, "Curve");
+
+                // 场景 B：平行线，半径被强制为 d/2（FilletGeo 半圆分支）
+                // 间距 d=6，半径 r=3（传入 r 在平行线场景被忽略，实际使用 d/2）
+                var p1 = new LineCurve(new Point3d(28, 62, 0), new Point3d(42, 62, 0));
+                var p2 = new LineCurve(new Point3d(28, 68, 0), new Point3d(42, 68, 0));
+                var circlesB = CurveCmd.CreateCircle(p1, p2, 3, Tol);
+                Assert.IsTrue(circlesB != null && circlesB.Length > 0, "CreateCircle(#7) 场景B:平行线半圆");
+                if (circlesB != null)
+                    foreach (var c in circlesB) WriteToDoc(c.ToNurbsCurve(), C, "Curve");
             });
 
             Step("CurveCmd.CreateArc(#1)", () =>
@@ -280,12 +291,22 @@ namespace Rh.Project.Test
 
             Step("CurveCmd.CreateArc(#4)", () =>
             {
-                var c1 = new LineCurve(new Point3d(31, 98, 0), new Point3d(39, 98, 0));
-                var c2 = new LineCurve(new Point3d(31, 104, 0), new Point3d(39, 104, 0));
+                // 场景 A：L 形垂直相交线段，交点处创建相切圆角弧（CreateFillet 路径）
+                var c1 = new LineCurve(new Point3d(28, 98, 0), new Point3d(42, 98, 0));
+                var c2 = new LineCurve(new Point3d(35, 91, 0), new Point3d(35, 105, 0));
                 var arcs = CurveCmd.CreateArc(c1, c2, 3, Tol);
-                Assert.IsTrue(arcs != null && arcs.Length > 0, "CreateArc(#4)");
+                Assert.IsTrue(arcs != null && arcs.Length > 0, "CreateArc(#4) 场景A:L形相交");
                 if (arcs != null)
                     foreach (var a in arcs) WriteToDoc(a.ToNurbsCurve(), C, "Curve");
+
+                // 场景 B：平行线，半径被强制为 d/2（FilletGeo 半圆分支）
+                // 间距 d=6，半径 r=3（传入 r 在平行线场景被忽略，实际使用 d/2）
+                var p1 = new LineCurve(new Point3d(28, 100, 0), new Point3d(42, 100, 0));
+                var p2 = new LineCurve(new Point3d(28, 106, 0), new Point3d(42, 106, 0));
+                var arcsB = CurveCmd.CreateArc(p1, p2, 3, Tol);
+                Assert.IsTrue(arcsB != null && arcsB.Length > 0, "CreateArc(#4) 场景B:平行线半圆");
+                if (arcsB != null)
+                    foreach (var a in arcsB) WriteToDoc(a.ToNurbsCurve(), C, "Curve");
             });
 
             Step("CurveCmd.CreateEllipse(#1)", () =>
@@ -398,7 +419,17 @@ namespace Rh.Project.Test
 
             Step("SurfaceCmd.CreateEdgeSrf", () =>
             {
-                var edges = new Curve[] { _poly12.ToNurbsCurve(), _rect14.ToNurbsCurve() };
+                // 用4条边构成矩形边界，创建边缘曲面
+                var p0 = new Point3d(60, 38, 0);
+                var p1 = new Point3d(68, 38, 0);
+                var p2 = new Point3d(68, 44, 0);
+                var p3 = new Point3d(60, 44, 0);
+                var edges = new Curve[] {
+                    new LineCurve(p0, p1).ToNurbsCurve(),
+                    new LineCurve(p1, p2).ToNurbsCurve(),
+                    new LineCurve(p2, p3).ToNurbsCurve(),
+                    new LineCurve(p3, p0).ToNurbsCurve()
+                };
                 var brep = SurfaceCmd.CreateEdgeSrf(edges);
                 Assert.IsValid(brep, "CreateEdgeSrf");
                 WriteToDoc(brep, C, "Surface");
@@ -479,7 +510,6 @@ namespace Rh.Project.Test
 
             Step("SurfaceCmd.CreateExtrude(#1)", () =>
             {
-                _rect13Copy = _rect13; // 复制引用用于后续步骤
                 var brep = SurfaceCmd.CreateExtrude(
                     _rect13.ToNurbsCurve(), new Vector3d(0, 0, 6));
                 Assert.IsValid(brep, "CreateExtrude(#1)");
@@ -541,8 +571,13 @@ namespace Rh.Project.Test
 
             Step("SolidCmd.CreateExtrudeSolid", () =>
             {
+                // YZ 平面闭合矩形，沿 X 方向挤出（X 垂直于 YZ 平面）
+                // 测试非 XY 平面的挤出实体创建
+                var yzPlane = new Plane(new Point3d(82, 8, 0), Vector3d.XAxis);
+                var profile = CurveCmd.CreateRectangle(
+                    yzPlane, new Point3d(82, 8, 0), new Point3d(82, 16, 6));
                 var brep = SolidCmd.CreateExtrudeSolid(
-                    _rect13Copy.ToNurbsCurve(), new Vector3d(0, 0, 6), true);
+                    profile.ToNurbsCurve(), new Vector3d(6, 0, 0), true);
                 Assert.IsTrue(brep != null && brep.IsSolid, "CreateExtrudeSolid");
                 WriteToDoc(brep, C, "Solid");
             });

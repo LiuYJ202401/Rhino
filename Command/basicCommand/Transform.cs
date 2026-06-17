@@ -226,7 +226,7 @@ namespace Rh.Cmd
         // 二、阵列
         // ================================================================
 
-        /// <summary>沿直线方向均匀阵列</summary>
+        /// <summary>沿直线方向均匀阵列（按间距）</summary>
         public static GeometryBase[] ArrayLinear(GeometryBase geometry, Vector3d direction, int count, bool isPreview = false)
         {
             if (geometry == null || !geometry.IsValid)
@@ -244,6 +244,26 @@ namespace Rh.Cmd
                 UpdateDefault("Array.count", count);
 
             return TransformGeo.ArrayLinear(geometry, direction, count);
+        }
+
+        /// <summary>沿直线方向均匀阵列（按总跨度：from→to 均匀分布）</summary>
+        public static GeometryBase[] ArrayLinear(GeometryBase geometry, Point3d from, Point3d to, int count, bool isPreview = false)
+        {
+            if (geometry == null || !geometry.IsValid)
+            {
+                RhinoApp.WriteLine("[ArrayLinear] 错误：geometry 为 null 或无效");
+                return null;
+            }
+            if (count < 2)
+            {
+                RhinoApp.WriteLine("[ArrayLinear] 错误：数量小于 2");
+                return null;
+            }
+
+            if (!isPreview)
+                UpdateDefault("Array.count", count);
+
+            return TransformGeo.ArrayLinear(geometry, from, to, count);
         }
 
         /// <summary>矩形阵列（X/Y/Z 三方向）</summary>

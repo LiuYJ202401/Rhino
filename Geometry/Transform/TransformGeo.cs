@@ -184,8 +184,9 @@ namespace Rh.Geo.Trs
         // 阵列
         // ================================================================
 
-        /// <summary>沿直线方向均匀阵列</summary>
-        /// <returns>阵列结果数组（不含原始位置对象）</returns>
+        /// <summary>沿直线方向均匀阵列（按间距）</summary>
+        /// <param name="direction">方向向量，其长度=相邻副本间距</param>
+        /// <returns>阵列结果数组（含原始位置对象在索引 0）</returns>
         public static GeometryBase[] ArrayLinear(GeometryBase geometry, Vector3d direction, int count)
         {
             if (geometry == null || !geometry.IsValid)
@@ -196,15 +197,43 @@ namespace Rh.Geo.Trs
                 return null;
 
             var results = new GeometryBase[count];
-            Vector3d unitDir = direction;
-            unitDir.Unitize();
-            double length = direction.Length;
+            // direction.Length = 相邻副本间距（与 Rhino 原生 ArrayLinear 一致）
+            // 第 0 个在原位，第 i 个偏移 i * direction
+            for (int i = 0; i < count; i++)
+            {
+                var dup = geometry.Duplicate();
+                var xform = Transform.Translation(direction * i);
+                dup.Transform(xform);
+                results[i] = dup;
+            }
+            return results;
+        }
+
+        /// <summary>沿直线方向均匀阵列（按总跨度）</summary>
+        /// <param name="from">分布起点</param>
+        /// <param name="to">分布终点</param>
+        /// <param name="count">副本数量（含起点位置）</param>
+        /// <returns>阵列结果数组，第 0 个在 from，最后一个在 to，中间均匀分布</returns>
+        public static GeometryBase[] ArrayLinear(GeometryBase geometry, Point3d from, Point3d to, int count)
+        {
+            if (geometry == null || !geometry.IsValid)
+                return null;
+            if (count < 2)
+                return null;
+
+            var results = new GeometryBase[count];
+            // 将几何中心对齐到 from，然后在 from→to 之间均匀分布
+            BoundingBox bbox = geometry.GetBoundingBox(false);
+            Point3d center = bbox.Center;
+            Vector3d totalSpan = to - from;
 
             for (int i = 0; i < count; i++)
             {
                 var dup = geometry.Duplicate();
                 double t = (double)i / (count - 1);
-                var xform = Transform.Translation(unitDir * length * t);
+                // 先把中心移到 from，再沿 totalSpan 偏移 t
+                Vector3d offset = (from - center) + totalSpan * t;
+                var xform = Transform.Translation(offset);
                 dup.Transform(xform);
                 results[i] = dup;
             }

@@ -145,12 +145,25 @@ namespace Rh.Project.Test
             // 阵列（X=420）
             // ================================================================
 
-            Step("TransformCmd.ArrayLinear", () =>
+            Step("TransformCmd.ArrayLinear(#1 按间距)", () =>
             {
                 var smallBox = SolidCmd.CreateBox(
                     new Point3d(420,0,0), new Point3d(423,3,3), Vector3d.ZAxis);
-                var result = TransformCmd.ArrayLinear(smallBox, new Vector3d(0,1,0), 4);
-                Assert.Count(4, result != null ? result.Length : 0, "ArrayLinear");
+                // direction=(0,4,0) → 相邻副本间距 4，第 0 个原位，后续在 Y=4,8,12
+                var result = TransformCmd.ArrayLinear(smallBox, new Vector3d(0,4,0), 4);
+                Assert.Count(4, result != null ? result.Length : 0, "ArrayLinear(#1)");
+                if (result != null)
+                    foreach (var g in result) WriteToDoc(g, C, "Array");
+            });
+
+            Step("TransformCmd.ArrayLinear(#2 按总跨度)", () =>
+            {
+                var smallBox = SolidCmd.CreateBox(
+                    new Point3d(420,16,0), new Point3d(423,19,3), Vector3d.ZAxis);
+                // from=(420,16,0) to=(420,40,0) → 4个对象在 Y=16,24,32,40 均匀分布
+                var result = TransformCmd.ArrayLinear(
+                    smallBox, new Point3d(420,16,0), new Point3d(420,40,0), 4);
+                Assert.Count(4, result != null ? result.Length : 0, "ArrayLinear(#2)");
                 if (result != null)
                     foreach (var g in result) WriteToDoc(g, C, "Array");
             });
@@ -196,8 +209,8 @@ namespace Rh.Project.Test
                     new Point3d(420,116,0), Vector3d.ZAxis, 1);
                 var rail = _line0c.DuplicateCurve();
                 var result = TransformCmd.ArrayAlongCrv(smallSphere, rail, 8.0, false);
-                Assert.GreaterThanZero(
-                    result != null ? result.Length : 0, "ArrayAlongCrv(#2)");
+                // line 长 30，spacing=8 → count = Floor(30/8)+1 = 4
+                Assert.Count(4, result != null ? result.Length : 0, "ArrayAlongCrv(#2)");
                 if (result != null)
                     foreach (var g in result) WriteToDoc(g, C, "Array");
             });
@@ -256,9 +269,10 @@ namespace Rh.Project.Test
 
             Step("TransformCmd.ProjectToCPlane", () =>
             {
-                // 抬高后的球体副本投影到 WorldXY 平面
-                var copy = (GeometryBase)_sphere0a.Duplicate();
-                var raised = TransformCmd.Move(copy, new Vector3d(100,60,10));
+                // 用曲线测试投影：抬高后的曲线投影到 WorldXY 平面
+                // 曲线投影后仍为曲线（非退化），比球体投影（压扁成退化曲面）更有意义
+                var copy = (GeometryBase)_line0c.Duplicate();
+                var raised = TransformCmd.Move(copy, new Vector3d(100,35,10));
                 var plane = new Plane(new Point3d(460,60,0), Vector3d.ZAxis);
                 var result = TransformCmd.ProjectToCPlane(raised, plane);
                 Assert.NotNull(result, "ProjectToCPlane");

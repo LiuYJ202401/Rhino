@@ -6,6 +6,16 @@
 
 对几何对象执行变换操作（不写入文档，返回变换后的几何对象）。
 
+## 返回值语义（重要）
+
+| 方法类型 | 语义 | 方法列表 |
+|---------|------|---------|
+| **原地修改** | 修改输入对象并返回同一引用 | Move, Rotate, Scale, Mirror, Shear, Orient, OrientOnSrf, OrientOnCrv, RemapCPlane, ProjectToCPlane |
+| **返回新对象** | 不修改输入，返回新副本 | Copy |
+| **返回新数组** | 不修改输入，返回副本数组 | ArrayLinear, ArrayRectangular, ArrayPolar, ArrayAlongCrv, ArrayOnSrf |
+
+> **注意**：调用"原地修改"类方法前，如需保留原始对象，应先调用 `geometry.Duplicate()`。
+
 ## 默认值机制
 
 - 标注 `[可选]` 的参数可不传入，Command 层自动从 Data 层读取默认值
@@ -125,17 +135,31 @@
 
 ## 二、阵列
 
-### ArrayLinear
+### ArrayLinear(#1 按间距)
 
 对应 Rhino 命令：`ArrayLinear`
 
 | 项目 | 说明 |
 |------|------|
-| 功能 | 沿直线方向均匀阵列 |
-| 输入 | `GeometryBase geometry` — 几何对象，`Vector3d direction` — 阵列方向（长度即间距），`int count` — 数量 |
-| 输出 | `GeometryBase[]` — 阵列结果数组（不含原始对象） |
+| 功能 | 沿直线方向均匀阵列（按相邻副本间距） |
+| 输入 | `GeometryBase geometry` — 几何对象，`Vector3d direction` — 方向向量（**长度=相邻副本间距**），`int count` — 数量 |
+| 输出 | `GeometryBase[]` — 阵列结果数组（**含原始位置对象在索引 0**） |
 | 报错 | count < 2 时返回 null；direction 为零向量时返回 null |
-| RhinoCommon | 循环 `Transform.Translation(direction * i / (count - 1))` |
+| RhinoCommon | 循环 `Transform.Translation(direction * i)`，第 i 个副本偏移 i × direction |
+| 语义说明 | direction.Length 是相邻副本间距（非总跨度）。如 direction=(0,4,0), count=4 → 副本在 Y=0,4,8,12 |
+
+### ArrayLinear(#2 按总跨度)
+
+对应 Rhino 命令：`ArrayLinear`（分布范围变体）
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | 沿直线方向均匀阵列（按分布范围） |
+| 输入 | `GeometryBase geometry` — 几何对象，`Point3d from` — 分布起点，`Point3d to` — 分布终点，`int count` — 数量 |
+| 输出 | `GeometryBase[]` — 阵列结果数组，第 0 个在 from，最后一个在 to，中间均匀分布 |
+| 报错 | count < 2 时返回 null |
+| RhinoCommon | 循环 `Transform.Translation((from-center) + (to-from) * t)`，t = i/(count-1) |
+| 语义说明 | 几何中心对齐到 from，然后在 from→to 之间均匀分布。如 from=(0,0,0), to=(0,12,0), count=4 → 中心在 Y=0,4,8,12 |
 
 ### ArrayRectangular
 
@@ -157,9 +181,10 @@
 |------|------|
 | 功能 | 环形阵列（绕轴旋转分布） |
 | 输入 | `GeometryBase geometry` — 几何对象，`Line axis` — 旋转轴，`int count` — 数量，`double totalAngleRadians` — 总角度（弧度）[可选，默认 2π]，`bool rotate` — 副本是否随阵列旋转 [可选，默认 true] |
-| 输出 | `GeometryBase[]` — 阵列结果数组（含原始位置对象） |
+| 输出 | `GeometryBase[]` — 阵列结果数组（**含原始位置对象在索引 0**） |
 | 报错 | count < 2 时返回 null；axis 无效时返回 null |
 | RhinoCommon | 循环 `Transform.Rotation(stepAngle * i, axis.Direction, axis.From)` |
+| 语义说明 | stepAngle = totalAngle / count，索引 0 在原位（angle=0），最后一个在 angle=(count-1)*stepAngle |
 
 ### ArrayAlongCrv
 
@@ -268,7 +293,7 @@
 | 分类 | 方法数 | 重载数 | 命令列表 |
 |------|--------|--------|---------|
 | 基本变换 | 7 | 9 | Move, Copy, Rotate(2), Scale(2), Mirror(2), Shear |
-| 阵列 | 5 | 6 | ArrayLinear, ArrayRectangular, ArrayPolar, ArrayAlongCrv(2), ArrayOnSrf |
+| 阵列 | 6 | 7 | ArrayLinear(2), ArrayRectangular, ArrayPolar, ArrayAlongCrv(2), ArrayOnSrf |
 | 定向 | 4 | 4 | Orient, OrientOnSrf, OrientOnCrv, RemapCPlane |
 | 投影 | 1 | 1 | ProjectToCPlane |
-| **合计** | **17** | **20** | |
+| **合计** | **18** | **21** | |

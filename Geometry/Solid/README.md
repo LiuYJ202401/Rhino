@@ -70,6 +70,7 @@
 
 ## 注意事项
 
+- **CapPlanarHoles 返回新对象**：`brep.CapPlanarHoles(tol)` 返回**新的 Brep**，不修改原对象。必须接收返回值：`brep = brep.CapPlanarHoles(tol);`。Geometry 层封装为私有 `CapPlanarHoles(brep, tol)` 辅助方法统一处理 null 检查和返回值接收。
 - **CapPlanarHoles 依赖公差**：封盖成功与否取决于公差参数，从 Data 层动态获取
 - **CreateTube 使用布尔差集**：需要公差参数，结果可能因精度产生缝隙
 - **Pyramid/TruncatedPyramid 使用 Brep.Append**：手动组装面后需 `JoinNakedEdges` 合并开放边

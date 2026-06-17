@@ -466,11 +466,70 @@ namespace Rh.Geo.Srf
             return Brep.CreateFromSurface(ns);
         }
 
+        // ============================================================
+        // 高度场曲面：由灰度图像创建曲面。
+        // 采样方式：点采样（取每个采样区域的中心像素），与 Rhino 原生 Heightfield 一致。
+        // 曲面构造：CreateThroughPoints（插值曲面，穿过所有采样点）。
+        // ============================================================
+
         /// <summary>
-        /// 高度场曲面：由灰度图像创建曲面。
-        /// 读取图像像素灰度值映射为高度。
+        /// 重载 1（完全控制）：用户指定所有物理尺寸和采样密度。
         /// </summary>
         public static Brep CreateHeightfield(string imagePath, Plane plane,
+            double width, double heightSize, double maxHeight,
+            int samplesX, int samplesY)
+        {
+            return CreateHeightfieldCore(imagePath, plane, width, heightSize, maxHeight, samplesX, samplesY);
+        }
+
+        /// <summary>
+        /// 重载 2（按图片比例自动适配高度）：用户只需指定物理宽度和采样密度，高度由图片宽高比自动推导。
+        /// </summary>
+        public static Brep CreateHeightfield(string imagePath, Plane plane,
+            double width, double maxHeight,
+            int samplesX, int samplesY)
+        {
+            var bmp = new System.Drawing.Bitmap(imagePath);
+            try
+            {
+                double aspectRatio = (double)bmp.Height / bmp.Width;
+                double heightSize = width * aspectRatio;
+                return CreateHeightfieldCore(imagePath, plane, width, heightSize, maxHeight, samplesX, samplesY);
+            }
+            finally
+            {
+                bmp.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 重载 3（全自动适配）：用户只需指定物理宽度和最大高度，高度和采样密度都由图片自动推导。
+        /// 采样密度上限 50，避免过高密度导致性能问题。
+        /// </summary>
+        public static Brep CreateHeightfield(string imagePath, Plane plane,
+            double width, double maxHeight)
+        {
+            var bmp = new System.Drawing.Bitmap(imagePath);
+            try
+            {
+                double aspectRatio = (double)bmp.Height / bmp.Width;
+                double heightSize = width * aspectRatio;
+                int samplesX = System.Math.Min(bmp.Width, 50);
+                int samplesY = System.Math.Min(bmp.Height, 50);
+                return CreateHeightfieldCore(imagePath, plane, width, heightSize, maxHeight, samplesX, samplesY);
+            }
+            finally
+            {
+                bmp.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// 高度场核心实现。
+        /// 采样方式：点采样（取每个采样区域的中心像素灰度值）。
+        /// 曲面构造：CreateThroughPoints（插值曲面，穿过所有采样点）。
+        /// </summary>
+        private static Brep CreateHeightfieldCore(string imagePath, Plane plane,
             double width, double heightSize, double maxHeight,
             int samplesX, int samplesY)
         {
@@ -485,7 +544,7 @@ namespace Rh.Geo.Srf
                 return null;
             }
 
-            // 采样像素灰度值
+            // 点采样：取每个采样区域的中心像素灰度值
             var points = new List<Point3d>();
             double stepX = (double)bmp.Width / samplesX;
             double stepY = (double)bmp.Height / samplesY;
@@ -512,6 +571,7 @@ namespace Rh.Geo.Srf
 
             bmp.Dispose();
 
+            // 插值曲面：穿过所有采样点
             var ns = NurbsSurface.CreateThroughPoints(points, samplesX, samplesY, 3, 3, false, false);
             if (ns == null)
                 return null;
