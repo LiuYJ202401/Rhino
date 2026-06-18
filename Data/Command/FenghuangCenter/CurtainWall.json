@@ -1,0 +1,38 @@
+{
+  "common": {
+    "tolerance": { "dynamic": true, "source": "ModelAbsoluteTolerance" }
+  },
+  "curves": {
+    "curveCount": 20,
+    "useVDirection": true
+  },
+  "grid": {
+    "divisionCount": 20,
+    "closedLoop": true,
+    "flipNormals": false
+  },
+  "structure": {
+    "offsetA": 500.0,
+    "offsetB": 500.0,
+    "beamWidthA": 200.0,
+    "beamDepthA": 400.0,
+    "beamWidthB": 200.0,
+    "beamDepthB": 400.0
+  },
+  "joint": {
+    "radius": 150.0,
+    "offset": 500.0
+  },
+  "glass": {
+    "thickness": 30.0
+  },
+  "frame": {
+    "width": 60.0,
+    "depth": 80.0
+  },
+  "claw": {
+    "length": 120.0,
+    "width": 25.0,
+    "depth": 35.0
+  }
+}

@@ -1,6 +1,11 @@
 ---
-name: "rhino-plugin-dev"
-description: "Guides development within the Rh six-layer Rhino C# plugin framework. Invoke when user wants to create commands, modify code, add features, or perform any development activity in this Rhino project."
+name: rhino-plugin-dev
+description: |
+  Guides development within a six-layer Rhino C# plugin framework (Project/Command/Geometry/Math/Data + UI). 
+  Covers layered architecture, naming conventions, development workflow, and documentation requirements. 
+  Invoke when: creating Rhino commands, modifying plugin code, adding geometry tools, working with UICommand/InputBuilder, 
+  managing default values, writing tests, or any C# development in this Rhino plugin project.
+compatibility: "Requires Rhino 8, Visual Studio 2022 with Rhino plugin template, RhinoCommon SDK. .NET C# project."
 ---
 
 # Rhino Plugin 开发指南
