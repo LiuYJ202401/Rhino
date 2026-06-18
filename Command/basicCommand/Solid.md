@@ -279,7 +279,7 @@
 | 输入 | `string text` — 文字内容，`Plane plane` — 文字所在平面，`double textHeight` — 文字高度，`double solidThickness` — 挤出深度，`string fontName` — 字体名 [可选]，`bool bold` — 粗体 [可选]，`bool italic` — 斜体 [可选]，`bool isPreview = false` |
 | 输出 | `Brep[]` — 每个字母一个实体 |
 | 报错 | 文字为空或字体不存在时输出错误消息并返回 null |
-| RhinoCommon | `TextEntity.CreateCurves` → `Brep.CreatePlanarBreps` → `BrepFace.CreateExtrusion(cap=true)` |
+| RhinoCommon | `TextEntity.Create` → `TextEntity.CreateExtrusions` → `Extrusion.ToBrep()`（Font/DimensionStyle 可直接 new，无需 doc.Fonts） |
 
 ### CreateThicken
 

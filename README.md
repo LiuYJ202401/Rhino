@@ -12,7 +12,9 @@
 
 新建该模板类型的项目，在**解决方案资源管理器**中右键项目名称，选择**添加->项目引用**，添加`Rhino 8`安装目录**.../Rhino 8/System/**内的文件`RhinoCommon.dll`,`Rhino.UI.dll`,`Eto.dll`。
 
-修改**./Properties/launchSettings.json**的内容，将"executablePath"的内容修改为自己电脑上`Rhino.exe`的路径。
+修改**`RhinoTrial.csproj`**的内容，将`HintPath`的内容修改为自己电脑上`Rhino 8`安装目录下对应文件的实际路径。
+
+修改**./Properties/launchSettings.json**的内容，将`executablePath`的内容修改为自己电脑上`Rhino.exe`的路径。
 
 运行编译程序，等待`Rhino 8`自动打开载入插件，注意插件的名称不能使用已使用的ID（如"Rhino"等）
 

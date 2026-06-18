@@ -378,14 +378,18 @@ namespace Rh.Cmd
             return brep;
         }
 
-        /// <summary>TODO: CreateTextObject 需要 doc.Fonts 访问，暂未实现</summary>
+        /// <summary>由 TrueType 字体创建 3D 实体文字</summary>
         public static Brep[] CreateTextObject(string text, Plane plane, double textHeight,
             double solidThickness, string fontName, bool bold, bool italic, bool isPreview = false)
         {
-            // 需要 ActiveDoc.Fonts.FindOrCreate，违反层级规则
-            // 应在 Project 层获取 FontIndex 后传入
-            RhinoApp.WriteLine("[CreateTextObject] 错误：方法暂未实现");
-            return null;
+            var result = SolidGeo.CreateTextObject(text, plane, textHeight,
+                solidThickness, fontName, bold, italic, ActiveTolerance());
+            if (result == null || result.Length == 0)
+            {
+                RhinoApp.WriteLine("[CreateTextObject] 错误：Geometry 层返回 null 或空数组");
+                return null;
+            }
+            return result;
         }
 
         public static Brep CreateThicken(Brep brep, double distance, bool bothSides, bool isPreview = false)

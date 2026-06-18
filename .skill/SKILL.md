@@ -145,7 +145,8 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 
 ### 2.6 代码风格
 
-- 步骤的三个函数用命名方法实现，不用 lambda
+- **插件命令**：步骤的三个函数（Setup/Process/Preview）用命名方法实现，不用 lambda
+- **测试程序**：步骤用 `Step(name, action)` 包装，action 内直接调用 Command 层 + Assert 断言
 - 模板内部交互循环等杂活用私有方法封装
 - 公差等参数从 Data 层传入，不直接访问 `ActiveDoc`
 
@@ -159,16 +160,13 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 - **代码与文档必须契合**：文档中的方法签名、重载数量、参数类型必须与实际代码一致
 - **开发流程中文档先行**：创建新功能时先写文档再写代码；修改接口时先改文档再改代码
 
-### 2.8 测试编写规则
+### 2.8 接口设计原则
 
-- **值类型断言用 `NotNull`**：`Circle`/`Arc`/`Line`/`Polyline`/`Ellipse` 等是值类型，不继承 `GeometryBase`，用 `Assert.NotNull`
-- **引用类型断言用 `IsValid`**：`Curve`/`Brep`/`Mesh`/`Surface` 等继承 `GeometryBase`，用 `Assert.IsValid`（同时检查 null 和有效性）
-
-### 2.9 接口设计原则
+> 适用于**所有开发**（插件命令、测试程序、其他 Command 方法）。
 
 **原则 1：接口自由（尽可能覆盖独立输入组合）**
 
-被调用测试的代码可能用于多种用途，面对多种不同的输入。接口要尽可能自由——**如果有多种不同的独立输入组合，就要提供对应的重载**。
+接口面向所有调用者——插件命令、测试程序、其他 Command 方法都可能以不同方式使用同一个 API。**如果有多种不同的独立输入组合，就要提供对应的重载**。
 
 这与"不要冗余输入"不矛盾：
 - **冗余输入**：一个参数可以从其他参数推导出来（如 NURBS 的 `degree` 可从 `order` 推导）→ 不应作为独立参数
@@ -180,24 +178,41 @@ public static Circle CreateCircle(Plane plane, Point3d center, double radius, bo
 3. 为每种典型的独立输入组合提供一个重载
 4. 最常用的组合作为主重载，其他作为补充
 
-### 2.10 测试覆盖原则
+**增添而非替换**：当发现同一功能有两种合理的实现方式时（如 ArrayLinear 的"按间距"和"按总跨度"），应**作为新重载增添**，而非替换现有实现。不同场景的开发者需要不同的语义，保留两种实现让 API 更易用。
 
-**原则 2：测试应尽可能覆盖所有代码的可用性**
+### 2.9 测试开发规则
 
-测试的目的不是"让代码通过"，而是"验证代码在各种输入下都能正确工作"。如果有多个重载、多种输入场景，就应该**编写多个测试**，分别覆盖每一种情况。
+> 完整的测试开发规则见 `Project/Test/Overview.md` 第 6 节。以下仅列出**对通用开发也有指导意义**的原则。
 
-- 每个重载至少有一个测试
-- 同一重载的不同输入场景（如不同平面、不同参数组合）应分别测试
-- 不要为了通过断言而改变测试目标——测试目标是固定的，代码实现应该满足测试
+**拓扑查询优先于拓扑假设**
 
-### 2.11 类型创建规则
+编写涉及 Brep 拓扑（边数、面数、Naked/Interior 分类）的代码时，**必须先查询实际拓扑，再做判断**，不能凭几何直觉假设。
+
+```
+错误：假设"矩形挤出有 8 条 Naked 边"
+正确：查询 _brep.Edges.Count(e => e.Valence == EdgeAdjacency.Naked) → 看到 2
+```
+
+Rhino 的 Brep 拓扑会合并接缝、识别周期性——这些只有运行时查询才知道。
+
+**问题诊断优先于直接修改**
+
+遇到代码行为与预期不符时，有两种可能：
+1. **代码有 bug** → 修改代码
+2. **预期错误**（如对 API 行为的假设错） → 修改预期/调用方式
+
+正确流程：不符 → 查询实际值 → 对比预期值 → 判断哪边错了 → 只改错的那边
+
+错误流程：不符 → 直接改代码（可能破坏正确逻辑）或直接改调用方（可能掩盖 bug）。
+
+### 2.10 类型创建规则
 
 - **优先通过 Command/Geometry 层方法创建几何**，不要直接 `new Circle(...)` / `new Arc(...)` / `new Brep(...)`
 - **原因**：RhinoCommon 的值类型构造函数签名复杂且版本差异大（如 `Arc` 有 6 种构造函数），凭记忆容易出错
 - **正确做法**：`CurveCmd.CreateCircle(...)` / `SolidCmd.CreateBox(...)` / `SurfaceCmd.CreatePlane(...)`
 - **例外**：Geometry 层内部实现可以直接使用 RhinoCommon 构造函数（因为它是封装的最后一层）
 
-### 2.12 Rhino 插件命令发现机制
+### 2.11 Rhino 插件命令发现机制
 
 **问题现象**：新增的命令在 Rhino 命令行中无法找到（输入后提示"Unknown command"），但代码编译无误、类继承正确。
 
@@ -219,7 +234,7 @@ public override PlugInLoadTime LoadTime => PlugInLoadTime.AtStartup;
 
 > **注意**：发布时必须移除此重写或改回 `WhenNeeded`，否则会拖慢 Rhino 启动速度。
 
-### 2.13 Geometry 层实现规范
+### 2.12 Geometry 层实现规范
 
 以下规则源于测试链 1 的实战教训，记录在 `Project/Test/Overview.md` 第 15 节。
 

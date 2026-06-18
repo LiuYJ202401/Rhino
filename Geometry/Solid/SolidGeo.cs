@@ -478,5 +478,44 @@ namespace Rh.Geo.Sld
             var result = Brep.CreateSolid(list, tolerance);
             return result != null && result.Length > 0 ? result[0] : null;
         }
+
+        /// <summary>从 TrueType 字体创建 3D 实体文字</summary>
+        public static Brep[] CreateTextObject(string text, Plane plane, double textHeight,
+            double solidThickness, string fontName, bool bold, bool italic, double tolerance)
+        {
+            if (string.IsNullOrEmpty(text) || textHeight <= 0 || solidThickness <= 0)
+                return null;
+
+            // 创建 Font（无需 doc.Fonts）
+            var fontWeight = bold ? Rhino.DocObjects.Font.FontWeight.Bold : Rhino.DocObjects.Font.FontWeight.Normal;
+            var fontStyle = italic ? Rhino.DocObjects.Font.FontStyle.Italic : Rhino.DocObjects.Font.FontStyle.Upright;
+            var font = new Rhino.DocObjects.Font(fontName ?? "Arial", fontWeight, fontStyle, false, false);
+
+            // 创建 DimensionStyle 并设置字体/高度（无需 doc）
+            var dimStyle = new Rhino.DocObjects.DimensionStyle();
+            dimStyle.Font = font;
+            dimStyle.TextHeight = textHeight;
+
+            // 创建 TextEntity
+            var textEntity = TextEntity.Create(text, plane, dimStyle, false, 0, 0);
+            if (textEntity == null)
+                return null;
+
+            // 挤出为 3D 实体
+            var extrusions = textEntity.CreateExtrusions(dimStyle, solidThickness, 1.0, 0.0);
+            if (extrusions == null || extrusions.Length == 0)
+                return null;
+
+            // 转换 Extrusion → Brep
+            var result = new List<Brep>();
+            foreach (var extrusion in extrusions)
+            {
+                var brep = extrusion.ToBrep();
+                if (brep != null && brep.IsValid)
+                    result.Add(brep);
+            }
+
+            return result.Count > 0 ? result.ToArray() : null;
+        }
     }
 }

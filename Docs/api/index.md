@@ -150,5 +150,5 @@ class PreviewConduit : DisplayConduit
 
 ## 相关资源
 
-- 原始 API: ../../rhino-docs/rhinocommon/api-static/html/index.html
-- 命令索引: ../../rhino-docs/COMMAND_INDEX.md
+- [RhinoCommon API 文档（在线）](https://developer.rhino3d.com/api/)
+- [RhinoCommon 源码（GitHub）](https://github.com/mcneel/rhinocommon)

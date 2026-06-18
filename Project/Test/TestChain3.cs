@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Rhino;
 using Rhino.Commands;
 using Rhino.Geometry;
@@ -127,12 +128,30 @@ namespace Rh.Project.Test
                     foreach (var c in result) WriteToDoc(c, C, "Curve");
             });
 
-            Step("CurveCmd.CreateDupEdge", () =>
+            Step("CurveCmd.CreateDupEdge(#1 指定边)", () =>
             {
-                // 开放挤出面有 8 条 Naked 边（4 底 + 4 侧棱），测重载2提取全部裸露边
+                // 重载1：提取调用者指定的边，不做任何过滤。
+                // _brep0c 是矩形挤出实体（长方体状），拓扑确定：12 条边。
+                // 选前 4 条（棱边），断言返回 4——验证 #1 按指定数量提取。
+                var selectedEdges = _brep0c.Edges
+                    .Where(e => e.Valence == EdgeAdjacency.Interior)
+                    .Take(4)
+                    .ToList();
+                var result = CurveCmd.CreateDupEdge(_brep0c, selectedEdges);
+                Assert.Count(4,
+                    result != null ? result.Length : 0, "CreateDupEdge(#1)");
+                if (result != null)
+                    foreach (var c in result) WriteToDoc(c, C, "Curve");
+            });
+
+            Step("CurveCmd.CreateDupEdge(#2 全部Naked边)", () =>
+            {
+                // 重载2：只提取 Naked 边。
+                // _openBrep0e 是闭合矩形曲线的无封盖挤出（单张周期性面），
+                // 有 2 条 Naked 边（顶接缝 + 底接缝）。
                 var result = CurveCmd.CreateDupEdge(_openBrep0e);
-                Assert.GreaterThanZero(
-                    result != null ? result.Length : 0, "CreateDupEdge.Length");
+                Assert.Count(2,
+                    result != null ? result.Length : 0, "CreateDupEdge(#2)");
                 if (result != null)
                     foreach (var c in result) WriteToDoc(c, C, "Curve");
             });

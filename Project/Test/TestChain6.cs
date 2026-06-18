@@ -103,8 +103,16 @@ namespace Rh.Project.Test
                 if (brep != null) WriteToDoc(brep, C, "Solid");
             });
 
-            // 步骤4：CreateTextObject 未实现，跳过
-            Skip("SolidCmd.CreateTextObject", "未实现");
+            Step("SolidCmd.CreateTextObject", () =>
+            {
+                var breps = SolidCmd.CreateTextObject(
+                    "Test", new Plane(new Point3d(660,36,0), Vector3d.ZAxis),
+                    4, 1, "Arial", false, false);
+                Assert.GreaterThanZero(
+                    breps != null ? breps.Length : 0, "CreateTextObject");
+                if (breps != null)
+                    foreach (var b in breps) WriteToDoc(b, C, "Solid");
+            });
 
             Step("SolidCmd.CreateThicken", () =>
             {
@@ -190,9 +198,10 @@ namespace Rh.Project.Test
 
             Step("SolidCmd.CreateRevolveSolid", () =>
             {
-                // 临时弧线作为旋转截面
+                // 截面弧线必须在包含旋转轴的竖直平面内（法向 X），不能在垂直于轴的水平面内
+                // 弧从 angle=0 (距轴3) 到 π/2 (触碰轴上 Z=3)，旋转 360° 后形成 1/4 球壳
                 var profile = CurveCmd.CreateArc(
-                    new Plane(new Point3d(660,154,0), Vector3d.ZAxis),
+                    new Plane(new Point3d(660,154,0), Vector3d.XAxis),
                     new Point3d(660,154,0), 3, 0, Math.PI / 2).ToNurbsCurve();
                 var axis = new Line(
                     new Point3d(660,154,0), new Point3d(660,154,10));

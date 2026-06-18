@@ -111,5 +111,5 @@ Docs/
 
 ## 原始资源
 
-- API 文档: ../../rhino-docs/rhinocommon/api-static/html/index.html
-- 命令索引: ../../rhino-docs/COMMAND_INDEX.md
+- [RhinoCommon API 文档（在线）](https://developer.rhino3d.com/api/)
+- [RhinoCommon 源码（GitHub）](https://github.com/mcneel/rhinocommon)

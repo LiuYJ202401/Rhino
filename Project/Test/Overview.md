@@ -9,11 +9,11 @@
 | 命令名 | 功能 | 步骤数 | 覆盖范围 |
 |--------|------|--------|---------|
 | `RhTestChain1` | 基础创建链：点→线→面→体 | 62 | Point 全部 + Curve 基础 + Surface 从曲线 + Solid 基础 |
-| `RhTestChain2` | 自由曲线与曲面 | 17 | Curve 自由曲线 + Surface 点/网络/补面/特殊 |
-| `RhTestChain3` | 对象提取与派生 | 11 | Curve 提取/投影/剖面 |
-| `RhTestChain4` | 变换与阵列 | 20 | Transform 全部 17 方法/20 重载 |
-| `RhTestChain5` | 网格与转换 | 18 | Mesh 全部 16 方法/18 重载 |
-| `RhTestChain6` | Solid 专属与特殊 | 14 | Solid 管道/板/文字/加厚/封盖 |
+| `RhTestChain2` | 自由曲线与曲面 | 19 | Curve 自由曲线 + Surface 点/网络/补面/Heightfield |
+| `RhTestChain3` | 对象提取与派生 | 12 | Curve 提取/投影/剖面（含 DupEdge 双重载） |
+| `RhTestChain4` | 变换与阵列 | 21 | Transform 全部 21 方法/重载 |
+| `RhTestChain5` | 网格与转换 | 19 | Mesh 全部 19 方法/重载（含凸包算法） |
+| `RhTestChain6` | Solid 专属与特殊 | 14 | Solid 管道/板/文字/加厚/封盖（含 TextObject 实现） |
 
 ## 3. 空间布局总览
 
@@ -58,7 +58,24 @@ Test::
 3. 最终输出汇总：`Total X, Passed Y, Failed Z`
 4. Rhino 视口可直接查看所有几何结果，旋转检查空间分布
 
-## 6. 断言规则
+## 6. 测试开发规则
+
+### 6.1 测试程序与插件命令的区别
+
+| 维度 | 插件命令（UICommand） | 测试程序（TestBase） |
+|------|----------------------|---------------------|
+| 基类 | `UICommand` | `Rhino.Commands.Command` |
+| 交互 | 有（InputBuilder/GetPoint） | 无（自动执行） |
+| 数据来源 | 用户实时输入 | 硬编码测试数据 |
+| 平面来源 | 视口 `ConstructionPlane()` | 硬编码 `Plane`（如 WorldXY@(140,172,0)） |
+| 预览 | isPreview 模式 | 无 |
+| 结果处理 | OnFinish 写入文档 | Assert 断言 + WriteToDoc 可视化 |
+| 目标 | 完成用户意图 | 覆盖所有代码路径 |
+
+### 6.2 断言规则
+
+- **值类型断言用 `NotNull`**：`Circle`/`Arc`/`Line`/`Polyline`/`Ellipse` 等是值类型，不继承 `GeometryBase`，用 `Assert.NotNull`
+- **引用类型断言用 `IsValid`**：`Curve`/`Brep`/`Mesh`/`Surface` 等继承 `GeometryBase`，用 `Assert.IsValid`（同时检查 null 和有效性）
 
 | 验证类型 | 规则 | 示例 |
 |---------|------|------|
@@ -70,6 +87,56 @@ Test::
 
 > 断言失败时记录 `[FAIL]` 并继续执行后续步骤（不中断）。
 > 几何对象无论断言是否通过都写入文档，方便人工检查失败原因。
+
+### 6.3 测试覆盖原则
+
+测试的目的不是"让代码通过"，而是"验证代码在各种输入下都能正确工作"。如果有多个重载、多种输入场景，就应该**编写多个测试**，分别覆盖每一种情况。
+
+- 每个重载至少有一个测试
+- 同一重载的不同输入场景（如不同平面、不同参数组合）应分别测试
+- **所有方法必须实现并测试，不能 Skip**：未实现的方法必须先实现再测试，不存在"跳过"的测试
+- **测试层直接调用每个方法/重载，不需要中间选择层**（如枚举）——测试的目的是覆盖所有代码路径，直接分别调用即可
+- 不要为了通过断言而改变测试目标——测试目标是固定的，代码实现应该满足测试
+
+### 6.4 断言必须基于固定的预期值
+
+断言的预期值必须是**预先确定的常数**，不能从输入参数推导。
+
+- **错误（恒真断言）**：`Assert.Count(input.Count, result.Length)` —— 无论 result 是什么，只要不丢数据就恒真
+- **正确（固定断言）**：`Assert.Count(4, result.Length)` —— 预期值 4 是基于功能理解确定的
+
+恒真断言的危害：即使被测代码有 bug（如跳过了某些元素），测试仍然 PASS，无法发现错误。
+
+### 6.5 断言强度——越精确越好
+
+| 断言类型 | 强度 | 使用场景 |
+|---------|------|---------|
+| `IsValid` | 弱 | 只验证"有结果"，无法发现质量问题 |
+| `GreaterThanZero` | 中 | 验证"有元素"，但 1 个和 100 个都通过 |
+| `Count(N)` | **强** | 精确验证数量，能捕获多/少返回的 bug |
+
+优先使用 `Count(N)`。只有在数量确实不确定时（如投影结果依赖几何相交），才降级用 `GreaterThanZero`。
+
+### 6.6 拓扑查询优先于拓扑假设
+
+编写涉及 Brep 拓扑（边数、面数、Naked/Interior 分类）的测试时，**必须先查询实际拓扑，再写断言**。
+
+```
+错误流程：假设"矩形挤出有 8 条 Naked 边" → 写 Assert.Count(8) → FAIL
+正确流程：查询 _brep.Edges.Count(e => e.Valence == Naked) → 看到 2 → 写 Assert.Count(2)
+```
+
+Rhino 的 Brep 拓扑会合并接缝、识别周期性——这些只有运行时查询才知道，不能凭直觉假设。
+
+### 6.7 测试 FAIL 时先确认是被测代码错还是测试预期错
+
+测试 FAIL 有两种可能：
+1. **被测代码有 bug** → 修改被测代码
+2. **测试预期错误**（如拓扑假设错） → 修改测试
+
+正确流程：FAIL → 查询实际值 → 对比预期值 → 判断哪边错了 → 只改错的那边
+
+错误流程：FAIL → 直接改测试（可能掩盖被测代码的 bug）或直接改被测代码（可能破坏正确逻辑）。
 
 ---
 
@@ -232,7 +299,8 @@ Test::
 | 5 | `CreateProjectCrv` | `curves=[临时曲线@ (260,30,5)], target=步骤0c Brep, dir=(0,0,-1)` | (260,30,0) | Extract | crvs.Length>0 |
 | 6 | `CreatePullCrv` | `curves=[临时曲线@ (260,40,3)], target=步骤0c Brep, tol=0.001` | (260,40,0) | Extract | crvs.Length>0 |
 | 7 | `CreateApplyCrv` | `curves=[临时曲线@ (260,50,3)], target=步骤0c Brep` | (260,50,0) | Extract | crvs.Length>0 |
-| 8 | `CreateDupEdge` | `brep=步骤0c Brep` | (260,60,0) | Extract | crvs.Length>0 |
+| 8a | `CreateDupEdge(#1 指定边)` | `brep=步骤0c 闭合实体, edges=前4条Interior边` | (260,60,0) | Extract | crvs.Length==4（#1 按调用者指定的数量提取，不做过滤） |
+| 8b | `CreateDupEdge(#2 全部Naked边)` | `brep=步骤0e 开放Brep` | (260,65,0) | Extract | crvs.Length==2（#2 只提取Naked边：顶底接缝） |
 | 9 | `CreateExtractIsocurve` | `brep=步骤0c Brep, point=(240,15,3), direction=0` | (260,70,0) | Extract | crv.IsValid |
 | 10 | `CreateContour` | `geometry=步骤0d Sphere, startPt=(260,80,0), endPt=(260,80,10), interval=2` | (260,80,0) | Extract | crvs.Length>0 |
 | 11 | `CreateSection` | `geometry=步骤0d Sphere, cutPlane=WorldXY@(260,90,3)` | (260,90,0) | Extract | crvs.Length>0 |
@@ -367,7 +435,7 @@ Test::
 | 1 | `CreatePipe(#1)` | `rail=步骤0a Line, radius=1.5, capMode=1(Flat)` | (660,0,6) | Solid | brep.IsSolid |
 | 2 | `CreatePipe(#2)` | `rail=步骤0a Line副本, innerR=1, outerR=2, capMode=2(Round)` | (660,12,6) | Solid | brep.IsSolid |
 | 3 | `CreateSlab` | `profile=步骤0c PolylineCurve, offset=2, dir=(0,0,1), cap=true` | (660,24,1) | Solid | brep.IsSolid |
-| 4 | `CreateTextObject` | `text="Test", plane=WorldXY@(660,36,0), textHeight=4, thickness=1, font="Arial", bold=false, italic=false` | (660,36,0) | Solid | breps != null（可能为 SKIP） |
+| 4 | `CreateTextObject` | `text="Test", plane=WorldXY@(660,36,0), textHeight=4, thickness=1, font="Arial", bold=false, italic=false` | (660,36,0) | Solid | breps.Length > 0 |
 | 5 | `CreateThicken` | `brep=步骤0d Loft结果, distance=1, bothSides=false` | (660,48,2) | Solid | brep.IsSolid |
 | 6 | `CreateCap` | `brep=步骤0e 未封闭Extrude` | (660,60,0) | Solid | brep.IsSolid |
 | 7 | `CreateSolidFromBreps` | `breps=[临时Box A(660,72,0), 临时Box B(660,73,0)]（相交）` | (660,72,0) | Solid | brep.IsSolid |
@@ -376,22 +444,24 @@ Test::
 | 10 | `CreateTube` | `base=(660,108,0), normal=(0,0,1), innerR=2, outerR=4, h=8, cap=true` | (660,108,4) | Solid | brep.IsSolid |
 | 11 | `CreateTruncatedPyramid` | `base=(660,124,0), normal=(0,0,1), sides=4, botR=4, topR=2, h=8, cap=true` | (660,124,4) | Solid | brep.IsSolid |
 | 12 | `CreateLoftSolid` | `curves=[临时圆C(660,140,0) r=3, 临时圆D(660,140,5) r=2, 临时圆E(660,140,10) r=1], loftType=0, cap=true` | (660,140,5) | Solid | brep.IsSolid |
-| 13 | `CreateRevolveSolid` | `profile=临时弧线@ (660,154,0), axis=Line((660,154,0)-(660,154,10)), startAng=0, endAng=2π, cap=true` | (660,154,0) | Solid | brep.IsSolid |
+| 13 | `CreateRevolveSolid` | `profile=竖直平面(法向X)弧线 r=3 (0→π/2) @(660,154,0), axis=Z轴((660,154,0)-(660,154,10)), startAng=0, endAng=2π, cap=true` | (660,154,0) | Solid | brep.IsSolid（截面在含轴竖直面内，一端触轴） |
 | 14 | `CreateSweepSolid` | `rail1=临时直线A, rail2=临时直线B, sections=[临时圆], cap=true` | (660,170,0) | Solid | brep.IsSolid |
 
 ---
 
 ## 13. 覆盖率统计
 
-| 功能区 | 方法数 | 重载数 | 测试链覆盖 | 步骤号 |
-|--------|--------|--------|-----------|--------|
-| Point | 8 | 9 | 链1 步骤1-9 | 全覆盖 |
-| Curve | 28 | 39 | 链1 步骤10-34 + 链2 步骤1-9 + 链3 步骤1-11 | 全覆盖 |
-| Surface | 20 | 25 | 链1 步骤35-54 + 链2 步骤10-17 | 全覆盖 |
-| Solid | 20 | 22 | 链1 步骤55-62 + 链6 步骤1-14 | 全覆盖 |
-| Mesh | 16 | 18 | 链5 步骤1-19（QuadRemesh 双重载） | 全覆盖 |
-| Transform | 17 | 20 | 链4 步骤1-20 | 全覆盖 |
-| **合计** | **109** | **133** | | **全覆盖** |
+| 功能区 | 方法数 | 重载数 | 测试链覆盖 | 步骤号 | 覆盖率 |
+|--------|--------|--------|-----------|--------|--------|
+| Point | 8 | 9 | 链1 步骤1-9 | 全覆盖 | 100% |
+| Curve | 37 | 39 | 链1 步骤10-34 + 链2 步骤1-9 + 链3 步骤1-12 | 全覆盖 | 100% |
+| Surface | 30 | 30 | 链1 步骤35-54 + 链2 步骤10-17 | 全覆盖 | 100% |
+| Solid | 21 | 21 | 链1 步骤55-62 + 链6 步骤1-14 | 全覆盖 | 100% |
+| Mesh | 19 | 19 | 链5 步骤1-19 | 全覆盖 | 100% |
+| Transform | 21 | 21 | 链4 步骤1-20 | 全覆盖 | 100% |
+| **合计** | **136** | **139** | | | **100%** |
+
+> 所有公开的 Create 方法/重载均有至少一个测试步骤覆盖。Get\* 配置方法由 Create 方法的默认参数间接调用，属于覆盖范围内。FilletGeo 通过 CreateCircle(#7)/CreateArc(#4) 间接覆盖。
 
 ## 14. 临时几何说明
 
@@ -865,3 +935,156 @@ Command 层 `CreateCircle(#7)` / `CreateArc(#4)` 改为调用 `FilletGeo.CreateF
 | 确认所有"封盖/合并"类 API 的返回值是否被接收 | 链 6 的 CreateCap/CreateLoftSolid |
 
 ---
+
+## 19. 测试链 2-6 调试记录（第二轮实机执行）
+
+### 19.1 背景
+
+在链 1 调试完成后，对链 2-6 进行代码审查 + 实机执行。这一轮发现了 **20 个问题**，涵盖参数丢弃、假实现、退化输入、断言设计、拓扑假设等类别。
+
+### 19.2 问题分类总览
+
+| 类别 | 数量 | 占比 | 典型问题 |
+|------|------|------|---------|
+| **参数丢弃**（接受参数但不使用） | 4 | 20% | capEnd/capEnds/tolerance 被忽略 |
+| **假实现/未实现** | 2 | 10% | ConvexHull 无面、TextObject 假依赖 |
+| **退化输入** | 4 | 20% | 共面点、挤出方向在平面内、投影压扁 |
+| **断言设计** | 4 | 20% | 恒真断言、断言太弱、拓扑假设错 |
+| **语义混淆** | 3 | 15% | ArrayLinear 间距 vs 总跨度 |
+| **基础几何问题** | 3 | 15% | RevolveSolid 截面平面、Tessellation 约束冲突 |
+
+### 19.3 各链问题清单
+
+#### 测试链 2（自由曲线与曲面）
+
+| # | 步骤 | 问题 | 根因 | 修复 |
+|---|------|------|------|------|
+| 1 | 17a/b | Heightfield 曲面扭曲振荡 | 采样密度不足（20×16=320 点 vs 50×50=2500 点），非算法选择问题 | 确认为预期行为：低密度采样本来就会产生粗糙曲面 |
+| 2 | 17 | Heightfield 重载设计 | 最初假设采样密度不可自动推导，后确认重载 3（Min(像素,50)）是正确做法 | 保留 3 重载设计（完全控制/按比例/全自动） |
+
+#### 测试链 3（对象提取与派生）
+
+| # | 步骤 | 问题 | 根因 | 修复 |
+|---|------|------|------|------|
+| 3 | 8a | CreateDupEdge(#1) 未测试 | 原测试只调用 #2 重载，遗漏 #1 | 新增 8a 测试 #1（指定边），8b 测试 #2（Naked 边） |
+| 4 | 8a/8b | 拓扑假设错误 | 假设闭合矩形挤出有 8 条 Naked 边，实际只有 2 条（周期性面合并接缝） | 查询实际拓扑后修正断言（Count(4)/Count(2)） |
+| 5 | 8a | 恒真断言 | `Assert.Count(selectedEdges.Count, ...)` 从输入推导预期值，恒真 | 改为固定断言 `Assert.Count(4, ...)` |
+
+#### 测试链 4（变换与阵列）
+
+| # | 步骤 | 问题 | 根因 | 修复 |
+|---|------|------|------|------|
+| 6 | 10 | ArrayLinear 语义混淆 | 代码实现"总跨度"语义，文档写的是"间距"语义 | 改为双重载：#1 间距(Vector3d)、#2 总跨度(Point3d from/to) |
+| 7 | 17 | ProjectToCPlane 退化 | 球体投影后压扁为退化曲面（体积=0） | 改用曲线测试（投影后仍为有效曲线） |
+| 8 | 14 | ArrayAlongCrv(#2) 断言太弱 | `GreaterThanZero` 对任何正数都通过 | 改为 `Count(4)`（line=30, spacing=8 → 4 个） |
+
+#### 测试链 5（网格与转换）
+
+| # | 步骤 | 问题 | 根因 | 修复 |
+|---|------|------|------|------|
+| 9 | 3 | CreateMeshCone capEnd 丢弃 | command 层接受 capEnd 参数但未传给 geo 层 | geo 层增加封盖逻辑（CreateCircleCap） |
+| 10 | 2 | CreateMeshCylinder capEnds 丢弃 | 同 #9 | 同 #9 |
+| 11 | 15 | CreateConvexHull 假实现 | 只加顶点不加面，不是凸包 | 实现真正的增量凸包算法 |
+| 12 | 15 | 凸包测试用共面点 | 4 个 Z=0 的点无法形成 3D 凸包 | 改用立方体 8 顶点 + 外部点（非共面） |
+| 13 | 17 | CreatePatch tolerance 忽略 | tolerance 参数从未使用 | 用于去除过近的重复点 |
+| 14 | 16 | CreateMeshFromTessellation 失败 | 固定边约束 + allowNewVertices=false 冲突 | 改用 5 点无固定边约束 |
+
+#### 测试链 6（Solid 专属）
+
+| # | 步骤 | 问题 | 根因 | 修复 |
+|---|------|------|------|------|
+| 15 | 4 | CreateTextObject 未实现 | 假设"需要 doc.Fonts，违反层级规则"——实际 Font/DimensionStyle 可直接 new | 实现 TextEntity.Create + CreateExtrusions → ToBrep |
+| 16 | 13 | CreateRevolveSolid 截面退化 | 弧线在水平面（法向 Z），旋转轴也是 Z → 产生扁平环而非回转体 | 截面改为在包含旋转轴的竖直平面内 |
+
+### 19.4 问题分类详解
+
+#### 类型 A：参数丢弃（4 个）
+
+**现象**：方法签名接受参数，但实现中完全未使用。
+
+| 方法 | 丢弃参数 | 危害 |
+|------|---------|------|
+| CreateMeshCone | capEnd | 用户以为能控制封盖，实际被忽略 |
+| CreateMeshCylinder | capEnds | 同上 |
+| CreatePatch(Mesh) | tolerance | 用户以为能控制精度，实际被忽略 |
+| ~~CreateHeightfield~~ | ~~（最初版本无此问题）~~ | |
+
+**检测方法**：代码审查时检查每个参数是否在方法体中出现。
+
+#### 类型 B：假实现/未实现（2 个）
+
+**现象**：方法名承诺的功能与实际实现不符。
+
+| 方法 | 承诺 | 实际 |
+|------|------|------|
+| CreateConvexHull | 计算点集的凸包 | 只加顶点到 Mesh，无面 |
+| CreateTextObject | 创建 3D 文字 | 返回 null（假注释说"需要 doc.Fonts"） |
+
+**根因**：ConvexHull 是因为 RhinoCommon 无内置 API 就放弃了；TextObject 是因为错误假设了 API 依赖。
+
+**教训**：不要轻信"未实现"的注释，应先验证 API 的真实依赖关系。
+
+#### 类型 C：退化输入（4 个）
+
+**现象**：测试输入的几何关系导致结果退化（零体积、零面积、无解）。
+
+| 测试 | 退化原因 | 后果 |
+|------|---------|------|
+| ProjectToCPlane(球体) | PlanarProjection 压扁 3D 实体 | 体积=0 的退化曲面 |
+| CreateConvexHull(共面点) | 4 个 Z=0 点无法形成 3D 凸包 | 无面生成 |
+| CreateMeshFromTessellation(固定边) | 边约束与 allowNewVertices=false 冲突 | 三角化无解 |
+| CreateRevolveSolid(截面平面=旋转轴方向) | 截面在垂直于轴的平面内 | 旋转后所有点在同一水平面 |
+
+**检测方法**：编写测试前思考"这个输入是否会让结果退化？"。
+
+#### 类型 D：断言设计（4 个）
+
+**现象**：断言无法有效检测 bug。
+
+| 问题 | 错误做法 | 正确做法 |
+|------|---------|---------|
+| 恒真断言 | `Assert.Count(input.Count, result.Length)` | `Assert.Count(4, result.Length)` |
+| 断言太弱 | `GreaterThanZero` | `Count(精确数字)` |
+| 拓扑假设错 | 假设 8 条 Naked 边 | 查询实际 2 条 |
+| 覆盖遗漏 | 只测 #2 重载 | #1 和 #2 分别测试 |
+
+### 19.5 经验教训总结
+
+#### 教训 1：参数丢弃是最容易检测的 bug
+
+代码审查时逐个参数检查"是否在方法体中使用"，能在 30 秒内发现。这类 bug 100% 是疏忽。
+
+#### 教训 2：不要假设 API 依赖
+
+CreateTextObject 的"未实现"源于一个**未经证实的假设**（"需要 doc.Fonts"）。实际调研后发现 Font/DimensionStyle/TextEntity 都不需要 doc 上下文。
+
+**规则**：遇到"未实现"或"无法实现"时，必须先查证 API 文档，确认真实依赖关系。
+
+#### 教训 3：恒真断言比没有断言更危险
+
+恒真断言给出"测试通过"的假象，让开发者以为代码正确。没有断言至少会提醒开发者"这里需要补充"。
+
+**规则**：断言的预期值必须是预先确定的常数，不能从输入推导。
+
+#### 教训 4：拓扑查询优先于拓扑假设
+
+Brep 的拓扑结构（边数、面数、Naked/Interior 分类）受 Rhino 内部合并/识别策略影响，不能凭几何直觉假设。
+
+**规则**：写拓扑相关断言前，先用代码查询实际值。
+
+#### 教训 5：FAIL 时先诊断再修改
+
+测试 FAIL 有两种原因：被测代码错 或 测试预期错。必须先查询实际值，判断哪边错了，只改错的那边。
+
+**错误流程**：FAIL → 直接改测试（可能掩盖 bug）或直接改代码（可能破坏正确逻辑）。
+
+### 19.6 与链 1 调试的对比
+
+| 维度 | 链 1（第一轮） | 链 2-6（第二轮） |
+|------|--------------|----------------|
+| 问题数 | 14（设计 7 + 运行 7） | 20 |
+| 主要类型 | 坐标系语义(29%)、实体构造(43%)、返回值语义(43%) | 参数丢弃(20%)、退化输入(20%)、断言设计(20%) |
+| 代码修改 | 重构核心算法 | 补全参数逻辑 + 修正测试设计 |
+| 测试修改 | 数据链串联 + 空间位置修正 | 拓扑查询 + 断言强度 + 覆盖补全 |
+
+**两轮共发现 34 个问题，无一重复**——说明每一轮检查的侧重点不同：第一轮聚焦 API 行为和坐标系语义，第二轮聚焦参数完整性和测试有效性。
