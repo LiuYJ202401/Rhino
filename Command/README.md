@@ -35,6 +35,70 @@
 - 不获取用户输入（不调用 UI 层交互方法）
 - 由 Project 层命令调用并整合结果
 
+## 错误输出规范
+
+**原则**：Command 层是用户与 Geometry 层之间的桥梁。所有错误必须在 Rhino 命令行中报告，**不能静默返回 null**。
+
+**错误消息格式**：`[方法名] 错误：具体原因`
+
+**完整示例**：
+
+```csharp
+public static Polyline CreateRectangle(Plane plane, Point3d corner1, Point3d corner2, bool isPreview = false)
+{
+    // 1. 参数校验（在调用 Geometry 之前）
+    if (corner1.DistanceTo(corner2) < 1e-12)
+    {
+        RhinoApp.WriteLine("[CreateRectangle] 错误：两点重合");
+        return null;
+    }
+
+    // 2. 调用 Geometry
+    var result = RectangleGeo.CreateFromCorners(plane, corner1, corner2);
+
+    // 3. 结果检查（Geometry 返回 null 时报告）
+    if (result == null)
+    {
+        RhinoApp.WriteLine("[CreateRectangle] 错误：两点在平面 UV 方向上投影重合，无法创建矩形");
+        return null;
+    }
+
+    // 4. 默认值管理
+    if (!isPreview)
+        UpdateDefault("CreateRectangle", result);
+
+    return result;
+}
+```
+
+**规则汇总**：
+- 参数校验失败 → 输出错误消息 + return null
+- Geometry 返回 null/Unset/空数组 → 输出错误消息 + return null/Unset/空数组
+- **Geometry 层保持静默**（只返回结果，不输出消息），由 Command 层统一报告
+- 错误消息用中文，简洁明了，指出哪个参数/条件导致失败
+
+## 接口设计原则
+
+> 适用于**所有开发**（插件命令、测试程序、其他 Command 方法）。
+
+### 原则 1：接口自由（尽可能覆盖独立输入组合）
+
+接口面向所有调用者——插件命令、测试程序、其他 Command 方法都可能以不同方式使用同一个 API。**如果有多种不同的独立输入组合，就要提供对应的重载**。
+
+这与"不要冗余输入"不矛盾：
+- **冗余输入**：一个参数可以从其他参数推导出来（如 NURBS 的 `degree` 可从 `order` 推导）→ 不应作为独立参数
+- **独立输入组合**：不同的使用场景需要不同的参数集合（如 Heightfield 有时指定物理尺寸，有时按图片比例自动适配）→ 应提供多个重载
+
+**设计步骤**：
+1. 识别哪些参数是**真正独立的**（不能从其他参数推导）
+2. 识别哪些参数在**某些场景下不需要用户指定**（可自动推导）
+3. 为每种典型的独立输入组合提供一个重载
+4. 最常用的组合作为主重载，其他作为补充
+
+### 原则 2：增添而非替换
+
+当发现同一功能有两种合理的实现方式时（如 ArrayLinear 的"按间距"和"按总跨度"），应**作为新重载增添**，而非替换现有实现。不同场景的开发者需要不同的语义，保留两种实现让 API 更易用。
+
 ## 默认值机制
 
 Command 层是**唯一直接调用 DataReader** 的层，负责默认值的读取和自动更新。

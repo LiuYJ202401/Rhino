@@ -14,6 +14,7 @@
 | `RhTestChain4` | 变换与阵列 | 21 | Transform 全部 21 方法/重载 |
 | `RhTestChain5` | 网格与转换 | 19 | Mesh 全部 19 方法/重载（含凸包算法） |
 | `RhTestChain6` | Solid 专属与特殊 | 14 | Solid 管道/板/文字/加厚/封盖（含 TextObject 实现） |
+| `RhTestImageFit` | 图片圆拟合（交互） | 1 | ImageCmd.CreateCircleFit（灰度采样→圆阵列） |
 
 ## 3. 空间布局总览
 
@@ -45,7 +46,8 @@ Test::
 ├── Chain3::Extract         链3的提取结果
 ├── Chain4::Transform       链4的变换结果
 ├── Chain5::Mesh            链5的网格
-└── Chain6::Solid           链6的专属实体
+├── Chain6::Solid           链6的专属实体
+└── ImageFit::Circle        图片圆拟合结果
 ```
 
 每个图层使用不同颜色，方便视口中区分。

@@ -1,0 +1,7 @@
+{
+  "CreateCircleFit": {
+    "precision": 30,
+    "unitSize": 10.0,
+    "minRadiusRatio": 0.1
+  }
+}

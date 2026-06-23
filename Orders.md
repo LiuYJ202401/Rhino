@@ -37,7 +37,67 @@ Data (Rh.Data)            默认值存储，JSON 文件 + DataReader 缓存
 6. **同层允许依赖**：如 Geometry/Solid 调用 Geometry/Curve 的方法
 7. **Geometry 子命名空间使用缩写**（Crv/Srf/Sld/Msh/Trs/Mrf），避免与 RhinoCommon 类型名冲突
 
+## 文档格式规范
+
+各层文档遵循统一格式，确保 AI 和开发者能快速定位信息。
+
+### Command 层文档格式（`Command/basicCommand/{功能区}.md`）
+
+```markdown
+### CreateXxx
+
+对应 Rhino 命令：`Xxx`
+
+**重载 1：参数方式 A**
+
+| 项目 | 说明 |
+|------|------|
+| 功能 | 一句话描述 |
+| 输入 | `Type param` — 说明 |
+| 输出 | `Type` — 说明 |
+| 报错 | 条件时返回 null/Unset |
+| RhinoCommon | `new Xxx(...)` 或 "无直接构造，调用 Geometry 层 XxxGeo" |
+```
+
+### Geometry 层文档格式（`Geometry/{类型}/README.md`）
+
+```markdown
+## XxxGeo
+
+| 方法 | 输入 | 输出 | RhinoCommon |
+|------|------|------|------------|
+| `CreateFromYyy` | Plane, Point3d, ... | Circle/NurbsCurve | `new Xxx(...)` |
+```
+
+### Project 层文档格式（`Project/{项目名}/Overview.md`）
+
+```markdown
+# 项目名 Overview
+
+## 命令一览
+
+| 命令名 | 功能 | 对应原生命令 |
+|--------|------|------------|
+| RhCreateXxx | 创建 XXX | Xxx |
+
+## 交互流程
+
+1. 用户选择/输入...
+2. 预览...
+3. 确认，写入文档
+```
+
+### Data 文档格式（`Data/Command/.../{功能区}.md`）
+
+```markdown
+| 命令 | 字段 | 类型 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| CreateXxx | paramName | double | 1.0 | 参数说明 |
+```
+
 ## 详细文档
 
 - 框架使用方式：见 `README.md`
 - AI 开发指南：见 `.skill/SKILL.md`
+- Command 层规则与示例：见 `Command/README.md`
+- 测试规则与教训：见 `Project/Test/Overview.md`

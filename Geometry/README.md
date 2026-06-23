@@ -17,16 +17,24 @@
 ```
 Geometry/
 ├── PlaneGeo.cs              平面工具（PointToUV 等通用计算）
-└── Curve/
-    ├── README.md            曲线工具说明文档
-    ├── CircleGeo.cs         圆创建（中心半径、直径、三点、切向）
-    ├── ArcGeo.cs            圆弧创建（中心角度、三点、起点终点方向）
-    ├── EllipseGeo.cs        椭圆创建（中心半径、直径、焦点）
-    ├── RectangleGeo.cs      矩形创建（对角点、中心宽高）
-    ├── PolygonGeo.cs        多边形顶点生成
-    ├── ConicGeo.cs          圆锥曲线手工 NURBS 构造
-    ├── CatenaryGeo.cs       悬链线牛顿迭代求解
-    └── HelixGeo.cs          螺旋线垂直参考点计算
+├── Curve/
+│   ├── README.md            曲线工具说明文档
+│   ├── CircleGeo.cs         圆创建（中心半径、直径、三点、切向）
+│   ├── ArcGeo.cs            圆弧创建（中心角度、三点、起点终点方向）
+│   ├── EllipseGeo.cs        椭圆创建（中心半径、直径、焦点）
+│   ├── RectangleGeo.cs      矩形创建（对角点、中心宽高）
+│   ├── PolygonGeo.cs        多边形顶点生成
+│   ├── ConicGeo.cs          圆锥曲线手工 NURBS 构造
+│   ├── CatenaryGeo.cs       悬链线牛顿迭代求解
+│   ├── HelixGeo.cs          螺旋线垂直参考点计算
+│   └── FilletGeo.cs         圆角相切圆/弧（含平行线半圆分支）
+├── Surface/SurfaceGeo.cs    曲面创建（22 方法）
+├── Solid/SolidGeo.cs        实体创建（20 方法）
+├── Mesh/MeshGeo.cs          网格创建（18 方法）
+├── Transform/TransformGeo.cs 变换工具（17 方法）
+└── Image/
+    ├── README.md            图片工具说明文档
+    └── ImageGeo.cs          图片灰度采样 + 灰度→圆阵列（待实现）
 ```
 
 ### 核心原则
@@ -46,6 +54,7 @@ Geometry/
 | Curve/ConicGeo.cs | `Rh.Geo.Crv` | `CreateConic`、`CreateHyperbola` | 圆锥曲线 |
 | Curve/CatenaryGeo.cs | `Rh.Geo.Crv` | `Create` | 悬链线（接收重力方向） |
 | Curve/HelixGeo.cs | `Rh.Geo.Crv` | `GetRadiusPoint` | 螺旋线参考点 |
+| Image/ImageGeo.cs | `Rh.Geo.Img` | `SampleGrayscale`、`CreateCirclesFromGrayscale` | 图片灰度采样 + 灰度→圆阵列（待实现） |
 
 ## 规则
 
